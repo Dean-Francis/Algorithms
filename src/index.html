@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Algorithms II — CUD Midterm</title>
+  <style>
+
+    /* ═══════════════════════════════════════════════════
+       DESIGN TOKENS
+    ═══════════════════════════════════════════════════ */
+    :root {
+      --accent:          #CC0000;
+      --accent-dim:      rgba(204, 0, 0, 0.20);
+      --accent-glow:     rgba(204, 0, 0, 0.35);
+
+      --font-ui:   -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Courier New', monospace;
+
+      --text-xs:   0.70rem;
+      --text-sm:   0.813rem;
+      --text-base: 0.9375rem;
+      --text-lg:   1.0625rem;
+      --text-xl:   1.25rem;
+      --text-2xl:  1.625rem;
+
+      --sp-xs:  4px;
+      --sp-sm:  8px;
+      --sp-md:  16px;
+      --sp-lg:  24px;
+      --sp-xl:  48px;
+
+      --radius-sm:   6px;
+      --radius-md:   10px;
+      --radius-lg:   14px;
+      --radius-pill: 999px;
+
+      --ease:        cubic-bezier(0.25, 0.1, 0.25, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --dur-fast:    150ms;
+      --dur-normal:  300ms;
+      --dur-slow:    500ms;
+    }
+
+    /* ── Dark theme ─────────────────────────────────── */
+    [data-theme="dark"] {
+      --bg-base:     #0A0A0A;
+      --bg-surface:  #141414;
+      --bg-elevated: #1C1C1E;
+      --bg-hover:    #242426;
+
+      --border:       rgba(255, 255, 255, 0.07);
+      --border-focus: var(--accent);
+
+      --text-primary:   #F2F2F7;
+      --text-secondary: #8E8E93;
+      --text-muted:     #48484A;
+
+      --shadow-card:     0 1px 4px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(255,255,255,0.04);
+      --shadow-elevated: 0 8px 32px rgba(0,0,0,0.7);
+
+      --glass-bg:     rgba(14, 14, 14, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.09);
+    }
+
+    /* ── Light theme ────────────────────────────────── */
+    [data-theme="light"] {
+      --bg-base:     #F2F2F7;
+      --bg-surface:  #FFFFFF;
+      --bg-elevated: #F2F2F7;
+      --bg-hover:    #E5E5EA;
+
+      --border:       rgba(0, 0, 0, 0.08);
+      --border-focus: var(--accent);
+
+      --text-primary:   #1C1C1E;
+      --text-secondary: #6C6C70;
+      --text-muted:     #C7C7CC;
+
+      --shadow-card:     0 1px 4px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04);
+      --shadow-elevated: 0 8px 32px rgba(0,0,0,0.12);
+
+      --glass-bg:     rgba(242, 242, 247, 0.82);
+      --glass-border: rgba(0, 0, 0, 0.08);
+    }
+
+    /* ═══════════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      transition: background var(--dur-normal) var(--ease),
+                  color var(--dur-normal) var(--ease);
+      overflow-x: hidden;
+    }
+
+    /* ═══════════════════════════════════════════════════
+       NAV RAIL
+    ═══════════════════════════════════════════════════ */
+    .nav-rail {
+      position: fixed;
+      top: 0; left: 0;
+      height: 100vh; width: 48px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid var(--glass-border);
+      display: flex; flex-direction: column;
+      align-items: center;
+      padding: var(--sp-lg) 0;
+      z-index: 200;
+      overflow: hidden;
+      transition: width var(--dur-normal) var(--ease);
+    }
+
+    .nav-rail:hover { width: 210px; }
+
+    .nav-logo-row {
+      display: flex; align-items: center;
+      width: 100%; padding: 0 10px;
+      margin-bottom: var(--sp-lg);
+      gap: var(--sp-sm); flex-shrink: 0;
+    }
+
+    .nav-logo {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-sm);
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+
+    .nav-logo-label {
+      font-size: var(--text-sm); font-weight: 600;
+      color: var(--text-primary); white-space: nowrap;
+      opacity: 0; transition: opacity var(--dur-fast) var(--ease);
+    }
+
+    .nav-rail:hover .nav-logo-label { opacity: 1; }
+
+    .nav-item {
+      display: flex; align-items: center;
+      width: 100%; padding: 9px 10px; gap: var(--sp-sm);
+      border-radius: var(--radius-md); cursor: pointer;
+      transition: background var(--dur-fast) var(--ease),
+                  color var(--dur-fast) var(--ease);
+      color: var(--text-secondary); position: relative;
+    }
+
+    .nav-item:hover  { background: var(--bg-hover); color: var(--text-primary); }
+    .nav-item.active { background: var(--accent-dim); color: var(--accent); }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 18px;
+      background: var(--accent);
+      border-radius: var(--radius-pill);
+    }
+
+    .nav-icon {
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; flex-shrink: 0;
+    }
+
+    .nav-label {
+      font-size: var(--text-sm); font-weight: 500;
+      white-space: nowrap; opacity: 0;
+      transition: opacity var(--dur-fast) var(--ease);
+    }
+
+    .nav-rail:hover .nav-label { opacity: 1; }
+    .nav-spacer { flex: 1; }
+
+    .nav-theme-btn {
+      display: flex; align-items: center;
+      width: 100%; padding: 9px 10px; gap: var(--sp-sm);
+      border-radius: var(--radius-md);
+      cursor: pointer; background: none; border: none;
+      color: var(--text-secondary); font-family: var(--font-ui);
+      transition: background var(--dur-fast) var(--ease),
+                  color var(--dur-fast) var(--ease);
+    }
+
+    .nav-theme-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+    /* ═══════════════════════════════════════════════════
+       VIZ HERO
+    ═══════════════════════════════════════════════════ */
+    .viz-hero {
+      margin-left: 48px; height: 100vh;
+      position: relative; display: flex; flex-direction: column;
+      background: var(--bg-base); overflow: hidden;
+    }
+
+    .viz-hero__title-block {
+      position: absolute; top: var(--sp-lg); left: var(--sp-lg);
+      z-index: 10; display: flex; flex-direction: column; gap: 5px;
+      pointer-events: none;
+    }
+
+    .viz-hero__badge {
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--accent); background: var(--accent-dim);
+      padding: 3px 9px; border-radius: var(--radius-pill);
+      width: fit-content;
+    }
+
+    .viz-hero__title {
+      font-size: var(--text-2xl); font-weight: 700;
+      letter-spacing: -0.5px; color: var(--text-primary); line-height: 1.2;
+    }
+
+    .viz-hero__subtitle { font-size: var(--text-sm); color: var(--text-secondary); }
+
+    .viz-hero__status {
+      position: absolute; top: var(--sp-lg); right: var(--sp-lg); z-index: 10;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.5px; text-transform: uppercase;
+      padding: 5px 12px; border-radius: var(--radius-pill);
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      transition: color var(--dur-normal) var(--ease);
+    }
+
+    .status-badge.ready   { color: #90CAF9; }
+    .status-badge.playing { color: #4CAF50; }
+    .status-badge.paused  { color: #FFC107; }
+    .status-badge.done    { color: var(--accent); }
+
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-badge.playing .status-dot { animation: pulse-dot 1.2s ease infinite; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    .viz-canvas {
+      flex: 1; width: 100%; position: relative;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .viz-canvas svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+
+    .viz-idle-hint {
+      display: flex; flex-direction: column; align-items: center;
+      gap: var(--sp-sm); color: var(--text-muted);
+      pointer-events: none; user-select: none;
+    }
+
+    .viz-idle-hint__icon { font-size: 3.5rem; opacity: 0.15; }
+    .viz-idle-hint__text { font-size: var(--text-sm); font-weight: 500; }
+
+    /* ── Floating pill ──────────────────────────────── */
+    .viz-controls-pill {
+      position: absolute; bottom: var(--sp-xl); left: 50%;
+      transform: translateX(-50%); z-index: 20;
+      display: flex; align-items: center; gap: var(--sp-sm);
+      padding: 10px 20px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-elevated);
+      opacity: 0;
+      transition: opacity var(--dur-normal) var(--ease);
+      white-space: nowrap;
+    }
+
+    .viz-hero:hover .viz-controls-pill,
+    .viz-controls-pill:focus-within,
+    .viz-controls-pill.pinned { opacity: 1; }
+
+    .pill-divider {
+      width: 1px; height: 18px;
+      background: var(--glass-border); flex-shrink: 0;
+    }
+
+    .pill-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 5px; font-family: var(--font-ui);
+      font-size: var(--text-xs); font-weight: 600;
+      border: none; border-radius: var(--radius-pill); cursor: pointer;
+      padding: 6px 13px;
+      transition: background var(--dur-fast) var(--ease),
+                  opacity var(--dur-fast) var(--ease),
+                  transform var(--dur-fast) var(--ease-spring);
+      background: transparent; color: var(--text-primary);
+      letter-spacing: 0.2px;
+    }
+
+    .pill-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+    [data-theme="light"] .pill-btn:hover:not(:disabled) { background: rgba(0,0,0,0.06); }
+    .pill-btn:active:not(:disabled) { transform: scale(0.93); }
+    .pill-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+
+    .pill-btn--primary { background: var(--accent); color: #fff; }
+    .pill-btn--primary:hover:not(:disabled) { filter: brightness(0.85); background: var(--accent); }
+
+    .pill-btn-icon { font-size: 12px; }
+
+    .pill-step-counter {
+      font-family: var(--font-mono); font-size: var(--text-xs);
+      color: var(--text-secondary); min-width: 46px; text-align: center;
+    }
+
+    .pill-speed-row { display: flex; align-items: center; gap: var(--sp-xs); }
+
+    .pill-speed-label {
+      font-family: var(--font-mono); font-size: var(--text-xs);
+      color: var(--accent); min-width: 26px; text-align: right;
+    }
+
+    .pill-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 70px; height: 3px;
+      background: var(--glass-border);
+      border-radius: var(--radius-pill); outline: none; cursor: pointer;
+    }
+
+    .pill-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+      transition: transform var(--dur-fast) var(--ease-spring);
+    }
+
+    .pill-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+
+    .pill-legend { display: flex; align-items: center; gap: var(--sp-md); }
+
+    .pill-legend-item {
+      display: flex; align-items: center; gap: 4px;
+      font-size: var(--text-xs); color: var(--text-secondary);
+    }
+
+    .pill-legend-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Scroll hint */
+    .scroll-hint {
+      position: absolute; bottom: var(--sp-lg); right: var(--sp-lg);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      color: var(--text-muted); font-size: var(--text-xs);
+      animation: bounce 2s ease infinite;
+      pointer-events: none; user-select: none;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); opacity: 0.4; }
+      50%       { transform: translateY(6px); opacity: 0.9; }
+    }
+
+    /* ═══════════════════════════════════════════════════
+       BELOW FOLD
+    ═══════════════════════════════════════════════════ */
+    .below-fold {
+      margin-left: 48px;
+      display: flex; flex-direction: column; gap: var(--sp-md);
+      padding: var(--sp-lg) var(--sp-lg) var(--sp-xl);
+    }
+
+    .info-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-md);
+    }
+
+    .panel {
+      background: var(--bg-surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: var(--sp-sm) var(--sp-md);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .panel-body { padding: var(--sp-md); }
+
+    /* Pseudocode */
+    .pseudocode-block {
+      font-family: var(--font-mono); font-size: var(--text-sm);
+      line-height: 1.9; background: var(--bg-elevated);
+      border-radius: var(--radius-md); padding: var(--sp-sm) var(--sp-md);
+      overflow-x: auto;
+    }
+
+    .code-line {
+      display: flex; gap: var(--sp-md);
+      padding: 1px var(--sp-xs); border-radius: var(--radius-sm);
+      cursor: default; transition: background var(--dur-fast) var(--ease);
+      position: relative;
+    }
+
+    .code-line:hover { background: var(--bg-hover); }
+
+    .code-line.active {
+      background: var(--accent-dim); color: var(--accent);
+    }
+
+    .code-line.active::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 2px; background: var(--accent);
+      border-radius: var(--radius-pill);
+    }
+
+    .line-num {
+      color: var(--text-muted); min-width: 18px; text-align: right;
+      user-select: none; flex-shrink: 0;
+    }
+
+    .code-line[data-tip]:hover::after {
+      content: attr(data-tip);
+      position: absolute; left: 100%; top: 50%;
+      transform: translateY(-50%); margin-left: var(--sp-sm);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: var(--sp-xs) var(--sp-sm);
+      font-size: var(--text-xs); color: var(--text-secondary);
+      white-space: nowrap; z-index: 50;
+      box-shadow: var(--shadow-elevated);
+      font-family: var(--font-ui); pointer-events: none;
+    }
+
+    /* Explanation box */
+    .explanation-box {
+      background: var(--bg-elevated); border-radius: var(--radius-md);
+      border-left: 3px solid var(--accent); padding: var(--sp-md);
+      font-size: var(--text-sm); color: var(--text-secondary);
+      line-height: 1.65; min-height: 52px; display: flex; align-items: center;
+    }
+
+    .explanation-box strong { color: var(--text-primary); }
+    .explanation-box .mono  {
+      font-family: var(--font-mono); color: var(--accent); font-size: var(--text-xs);
+    }
+
+    /* ── Collapsible sections ───────────────────────── */
+    .collapsible {
+      background: var(--bg-surface); border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card); border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .collapsible-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--sp-md) var(--sp-lg); cursor: pointer; user-select: none;
+      transition: background var(--dur-fast) var(--ease);
+    }
+
+    .collapsible-header:hover { background: var(--bg-hover); }
+
+    .collapsible-header-left { display: flex; align-items: center; gap: var(--sp-sm); }
+
+    .collapsible-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); }
+    .collapsible-hint  { font-size: var(--text-xs); color: var(--text-muted); }
+
+    .collapsible-chevron {
+      color: var(--text-muted); font-size: 11px;
+      transition: transform var(--dur-normal) var(--ease);
+    }
+
+    .collapsible.open .collapsible-chevron { transform: rotate(90deg); }
+
+    .collapsible-body {
+      max-height: 0; overflow: hidden;
+      transition: max-height var(--dur-slow) var(--ease);
+    }
+
+    .collapsible.open .collapsible-body { max-height: 900px; }
+
+    .collapsible-inner {
+      padding: 0 var(--sp-lg) var(--sp-lg);
+      border-top: 1px solid var(--border);
+    }
+
+    /* Input grid */
+    .input-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: var(--sp-md); margin-top: var(--sp-md);
+    }
+
+    .input-grid--2col { grid-template-columns: 1fr 1fr; }
+    .input-grid--1col { grid-template-columns: 1fr; }
+
+    .input-group { display: flex; flex-direction: column; gap: var(--sp-xs); }
+
+    .input-label {
+      font-size: var(--text-xs); font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .input-field {
+      font-family: var(--font-mono); font-size: var(--text-base);
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 8px 12px;
+      color: var(--text-primary); outline: none; width: 100%;
+      transition: border-color var(--dur-fast) var(--ease),
+                  box-shadow var(--dur-fast) var(--ease);
+    }
+
+    .input-field:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    .presets-row {
+      display: flex; gap: var(--sp-sm); flex-wrap: wrap;
+      margin-top: var(--sp-md); align-items: center;
+    }
+
+    .presets-label {
+      font-size: var(--text-xs); font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    .preset-btn {
+      font-size: var(--text-xs); font-weight: 500; padding: 5px 11px;
+      border-radius: var(--radius-pill); background: var(--bg-elevated);
+      border: 1px solid var(--border); color: var(--text-secondary);
+      cursor: pointer; font-family: var(--font-ui);
+      transition: background var(--dur-fast) var(--ease),
+                  color var(--dur-fast) var(--ease),
+                  border-color var(--dur-fast) var(--ease);
+    }
+
+    .preset-btn:hover {
+      background: var(--accent-dim); color: var(--accent); border-color: var(--accent);
+    }
+
+    /* Stats */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: var(--sp-md); margin-top: var(--sp-md);
+    }
+
+    .stat-card {
+      background: var(--bg-elevated); border-radius: var(--radius-md);
+      padding: var(--sp-md); display: flex; flex-direction: column; gap: 4px;
+    }
+
+    .stat-value {
+      font-size: var(--text-xl); font-weight: 700;
+      font-family: var(--font-mono); color: var(--text-primary);
+    }
+
+    .stat-label { font-size: var(--text-xs); color: var(--text-muted); font-weight: 500; }
+
+    /* History table */
+    .history-wrapper {
+      max-height: 220px; overflow-y: auto;
+      border-radius: var(--radius-md); border: 1px solid var(--border);
+      margin-top: var(--sp-md);
+    }
+
+    .history-table {
+      width: 100%; border-collapse: collapse;
+      font-family: var(--font-mono); font-size: var(--text-sm);
+    }
+
+    .history-table th {
+      text-align: left; padding: var(--sp-sm) var(--sp-md);
+      font-size: var(--text-xs); font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--font-ui); background: var(--bg-elevated);
+    }
+
+    .history-table td {
+      padding: var(--sp-sm) var(--sp-md); color: var(--text-secondary);
+      border-bottom: 1px solid var(--border); cursor: pointer;
+      transition: background var(--dur-fast) var(--ease);
+    }
+
+    .history-table tr:hover td   { background: var(--bg-hover); color: var(--text-primary); }
+    .history-table tr.current td { background: var(--accent-dim); color: var(--accent); }
+
+    /* Educational */
+    .edu-content { margin-top: var(--sp-md); display: flex; flex-direction: column; gap: var(--sp-md); }
+
+    .edu-p { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.7; }
+
+    .key-concept {
+      background: var(--accent-dim); border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: var(--sp-md) var(--sp-lg);
+    }
+
+    .key-concept-title {
+      font-size: var(--text-xs); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--accent); margin-bottom: 4px;
+    }
+
+    .key-concept-body { font-size: var(--text-sm); color: var(--text-secondary); line-height: 1.6; }
+    .key-concept-body .mono { font-family: var(--font-mono); color: var(--accent); font-size: var(--text-xs); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: var(--radius-pill); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .info-row   { grid-template-columns: 1fr; }
+      .input-grid { grid-template-columns: 1fr 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+
+      .nav-rail {
+        width: 100%; height: 52px; flex-direction: row;
+        top: auto; bottom: 0; left: 0; padding: 0 var(--sp-md);
+        border-right: none; border-top: 1px solid var(--glass-border);
+      }
+
+      .nav-rail:hover { width: 100%; }
+      .nav-logo-row   { display: none; }
+      .nav-label      { opacity: 0 !important; }
+      .nav-spacer     { display: none; }
+      .viz-hero, .below-fold { margin-left: 0; }
+      .viz-hero { margin-bottom: 52px; }
+      .viz-controls-pill { bottom: 70px; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       NAV RAIL
+  ═══════════════════════════════════════════════ -->
+  <nav class="nav-rail">
+    <div class="nav-logo-row">
+      <div class="nav-logo">C</div>
+      <span class="nav-logo-label">Algorithms II</span>
+    </div>
+    <div class="nav-item" data-part="1">
+      <div class="nav-icon">⬡</div>
+      <span class="nav-label">Matrix Chain</span>
+    </div>
+    <div class="nav-item" data-part="2">
+      <div class="nav-icon">⇅</div>
+      <span class="nav-label">Parallel Sort</span>
+    </div>
+    <div class="nav-item" data-part="3">
+      <div class="nav-icon">∑</div>
+      <span class="nav-label">Extended GCD</span>
+    </div>
+    <div class="nav-spacer"></div>
+    <button class="nav-theme-btn" id="themeToggle">
+      <div class="nav-icon" id="themeIcon">🌙</div>
+      <span class="nav-label" id="themeLabel">Light Mode</span>
+    </button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════
+       PART 1 — MATRIX CHAIN MULTIPLICATION
+  ═══════════════════════════════════════════════ -->
+  <div id="p1-section">
+
+    <section class="viz-hero" id="p1-vizHero">
+      <div class="viz-hero__title-block">
+        <span class="viz-hero__badge">CLO-1</span>
+        <h1 class="viz-hero__title">Matrix Chain</h1>
+        <span class="viz-hero__subtitle">Dynamic Programming</span>
+      </div>
+
+      <div class="viz-hero__status">
+        <div class="status-badge" id="p1-statusBadge">
+          <span class="status-dot"></span>
+          <span id="p1-statusText">Idle</span>
+        </div>
+      </div>
+
+      <div class="viz-canvas" id="p1-vizCanvas">
+        <div class="viz-idle-hint" id="p1-vizIdleHint">
+          <div class="viz-idle-hint__icon">⬡</div>
+          <div class="viz-idle-hint__text">Press Build to begin</div>
+        </div>
+        <svg id="p1-vizSvg" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+      </div>
+
+      <!-- Floating pill controls -->
+      <div class="viz-controls-pill" id="p1-controlsPill">
+
+        <button class="pill-btn pill-btn--primary" id="p1-btnBuild">
+          <span class="pill-btn-icon">⚙</span> Build
+        </button>
+
+        <div class="pill-divider"></div>
+
+        <button class="pill-btn" id="p1-btnStep" disabled>
+          <span class="pill-btn-icon">→</span> Step
+        </button>
+        <button class="pill-btn" id="p1-btnPlay" disabled>
+          <span class="pill-btn-icon">▶</span> Play
+        </button>
+        <button class="pill-btn" id="p1-btnPause" disabled>
+          <span class="pill-btn-icon">⏸</span>
+        </button>
+        <button class="pill-btn" id="p1-btnReset" disabled>
+          <span class="pill-btn-icon">↺</span>
+        </button>
+
+        <div class="pill-divider"></div>
+
+        <div class="pill-speed-row">
+          <input type="range" class="pill-slider" id="p1-speedSlider"
+                 min="0.25" max="4" step="0.25" value="1" />
+          <span class="pill-speed-label" id="p1-speedValue">1×</span>
+        </div>
+
+        <div class="pill-divider"></div>
+
+        <span class="pill-step-counter" id="p1-stepCounter">— / —</span>
+
+        <div class="pill-divider"></div>
+
+        <div class="pill-legend">
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:var(--accent);"></div>
+            Active
+          </div>
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:#4CAF50;"></div>
+            Optimal
+          </div>
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:#90CAF9;"></div>
+            Subproblem
+          </div>
+        </div>
+
+      </div>
+
+      <div class="scroll-hint">
+        <span>scroll</span>
+        <span>↓</span>
+      </div>
+    </section>
+
+    <div class="below-fold">
+
+      <!-- Pseudocode + Step explanation -->
+      <div class="info-row">
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Pseudocode</span></div>
+          <div class="panel-body">
+            <div class="pseudocode-block">
+              <div class="code-line" id="p1-pline-1" data-tip="Entry point — returns m and s tables">
+                <span class="line-num">1</span>
+                <span><b>function</b> MatrixChain(p)</span>
+              </div>
+              <div class="code-line" id="p1-pline-2" data-tip="Number of matrices to multiply">
+                <span class="line-num">2</span>
+                <span>&nbsp;&nbsp;n ← length(p) − 1</span>
+              </div>
+              <div class="code-line" id="p1-pline-3" data-tip="Iterate over chain lengths 1..n">
+                <span class="line-num">3</span>
+                <span>&nbsp;&nbsp;<b>for</b> ℓ = 1 <b>to</b> n &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// chain length</span>
+              </div>
+              <div class="code-line" id="p1-pline-4" data-tip="Starting index of subchain">
+                <span class="line-num">4</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;<b>for</b> i = 1 <b>to</b> n − ℓ + 1</span>
+              </div>
+              <div class="code-line" id="p1-pline-5" data-tip="Ending index of subchain">
+                <span class="line-num">5</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j ← i + ℓ − 1</span>
+              </div>
+              <div class="code-line" id="p1-pline-6" data-tip="Initialize cost to infinity">
+                <span class="line-num">6</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m[i][j] ← ∞</span>
+              </div>
+              <div class="code-line" id="p1-pline-7" data-tip="Try every split point k between i and j">
+                <span class="line-num">7</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>for</b> k = i <b>to</b> j − 1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// split point</span>
+              </div>
+              <div class="code-line" id="p1-pline-8" data-tip="Cost of this split: left + right + multiply">
+                <span class="line-num">8</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q ← m[i][k] + m[k+1][j] + pᵢ₋₁·pₖ·pⱼ</span>
+              </div>
+              <div class="code-line" id="p1-pline-9" data-tip="Update if better split found">
+                <span class="line-num">9</span>
+                <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>if</b> q &lt; m[i][j] <b>then</b> m[i][j] ← q; s[i][j] ← k</span>
+              </div>
+              <div class="code-line" id="p1-pline-10" data-tip="Return cost table m and split table s">
+                <span class="line-num">10</span>
+                <span>&nbsp;&nbsp;<b>return</b> m, s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Step Explanation</span></div>
+          <div class="panel-body">
+            <div class="explanation-box" id="p1-explanationBox">
+              Enter matrix dimensions in <strong>Input &amp; Presets</strong> below,
+              then press <strong>Build</strong> in the controls above to start.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input & Presets -->
+      <div class="collapsible open" id="p1-sectionInput">
+        <div class="collapsible-header" onclick="toggleSection('p1-sectionInput')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Input &amp; Presets</span>
+            <span class="collapsible-hint">Enter comma-separated matrix dimensions</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="input-grid input-grid--1col">
+              <div class="input-group">
+                <label class="input-label" for="p1-inputDims">Dimensions (comma-separated)</label>
+                <input class="input-field" type="text" id="p1-inputDims"
+                       value="10,30,5,60" placeholder="e.g. 10,30,5,60" />
+              </div>
+            </div>
+            <div class="presets-row">
+              <span class="presets-label">Presets</span>
+              <button class="preset-btn" onclick="loadPreset(1,'10,30,5')">3 matrices</button>
+              <button class="preset-btn" onclick="loadPreset(1,'40,20,30,10,30')">4 matrices</button>
+              <button class="preset-btn" onclick="loadPreset(1,'30,35,15,5,10,20,25')">6 matrices</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics & History -->
+      <div class="collapsible" id="p1-sectionStats">
+        <div class="collapsible-header" onclick="toggleSection('p1-sectionStats')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Statistics &amp; History</span>
+            <span class="collapsible-hint">Live counters and step log</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-value" id="p1-statMultiplications">—</span>
+                <span class="stat-label">Scalar Multiplications</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p1-statTablesFilled">—</span>
+                <span class="stat-label">Tables Filled</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p1-statOptimalSplit">—</span>
+                <span class="stat-label">Optimal Split</span>
+              </div>
+            </div>
+            <div class="history-wrapper">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>i</th><th>j</th>
+                    <th>k (split)</th><th>m[i][j]</th>
+                  </tr>
+                </thead>
+                <tbody id="p1-historyBody">
+                  <tr>
+                    <td colspan="5"
+                      style="text-align:center;color:var(--text-muted);font-family:var(--font-ui);">
+                      No steps yet
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Educational Overview -->
+      <div class="collapsible" id="p1-sectionEdu">
+        <div class="collapsible-header" onclick="toggleSection('p1-sectionEdu')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Educational Overview</span>
+            <span class="collapsible-hint">Key concepts, algorithm explanation and complexity</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="edu-content">
+              <p class="edu-p">
+                <strong>Matrix Chain Multiplication</strong> asks: given n matrices A₁, A₂, …, Aₙ,
+                in what order should we parenthesize the product to minimize scalar multiplications?
+                Matrix multiplication is associative, so the order matters only for cost.
+              </p>
+              <div class="key-concept">
+                <div class="key-concept-title">Optimal Substructure</div>
+                <div class="key-concept-body">
+                  Any optimal parenthesization of A<sub>i..j</sub> must split at some k where
+                  <span class="mono">i ≤ k &lt; j</span>, and the two sub-products A<sub>i..k</sub>
+                  and A<sub>k+1..j</sub> must themselves be optimally parenthesized.
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">DP Table</div>
+                <div class="key-concept-body">
+                  <span class="mono">m[i][j]</span> stores the minimum cost to multiply
+                  matrices i through j. Fill order: by chain length ℓ = 1, 2, …, n.
+                  <span class="mono">m[i][i] = 0</span> for all i (base case).
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">O(n³) Complexity</div>
+                <div class="key-concept-body">
+                  Three nested loops: chain length, start index, split point.
+                  Space is <span class="mono">O(n²)</span> for the m and s tables.
+                  Reconstructing the optimal order from s takes <span class="mono">O(n)</span>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PART 2 — PARALLEL MERGE SORT
+  ═══════════════════════════════════════════════ -->
+  <div id="p2-section" style="display:none;">
+
+    <section class="viz-hero" id="p2-vizHero">
+      <div class="viz-hero__title-block">
+        <span class="viz-hero__badge">CLO-2</span>
+        <h1 class="viz-hero__title">Parallel Merge Sort</h1>
+        <span class="viz-hero__subtitle">Fork-Join Parallel Sorting</span>
+      </div>
+
+      <div class="viz-hero__status">
+        <div class="status-badge" id="p2-statusBadge">
+          <span class="status-dot"></span>
+          <span id="p2-statusText">Idle</span>
+        </div>
+      </div>
+
+      <div class="viz-canvas" id="p2-vizCanvas">
+        <div class="viz-idle-hint" id="p2-vizIdleHint">
+          <div class="viz-idle-hint__icon">⇅</div>
+          <div class="viz-idle-hint__text">Press Build to begin</div>
+        </div>
+        <svg id="p2-vizSvg" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+      </div>
+
+      <!-- Floating pill controls -->
+      <div class="viz-controls-pill" id="p2-controlsPill">
+
+        <button class="pill-btn pill-btn--primary" id="p2-btnBuild">
+          <span class="pill-btn-icon">⚙</span> Build
+        </button>
+
+        <div class="pill-divider"></div>
+
+        <button class="pill-btn" id="p2-btnStep" disabled>
+          <span class="pill-btn-icon">→</span> Step
+        </button>
+        <button class="pill-btn" id="p2-btnPlay" disabled>
+          <span class="pill-btn-icon">▶</span> Play
+        </button>
+        <button class="pill-btn" id="p2-btnPause" disabled>
+          <span class="pill-btn-icon">⏸</span>
+        </button>
+        <button class="pill-btn" id="p2-btnReset" disabled>
+          <span class="pill-btn-icon">↺</span>
+        </button>
+
+        <div class="pill-divider"></div>
+
+        <div class="pill-speed-row">
+          <input type="range" class="pill-slider" id="p2-speedSlider"
+                 min="0.25" max="4" step="0.25" value="1" />
+          <span class="pill-speed-label" id="p2-speedValue">1×</span>
+        </div>
+
+        <div class="pill-divider"></div>
+
+        <span class="pill-step-counter" id="p2-stepCounter">— / —</span>
+
+        <div class="pill-divider"></div>
+
+        <div class="pill-legend">
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:var(--accent);"></div>
+            Active
+          </div>
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:#FFC107;"></div>
+            Merging
+          </div>
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:#4CAF50;"></div>
+            Sorted
+          </div>
+        </div>
+
+      </div>
+
+      <div class="scroll-hint">
+        <span>scroll</span>
+        <span>↓</span>
+      </div>
+    </section>
+
+    <div class="below-fold">
+
+      <!-- Pseudocode + Step explanation -->
+      <div class="info-row">
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Pseudocode</span></div>
+          <div class="panel-body">
+            <div class="pseudocode-block">
+              <div class="code-line" id="p2-pline-1" data-tip="Recursive parallel sort — fork and join">
+                <span class="line-num">1</span>
+                <span><b>function</b> ParMergeSort(A, lo, hi)</span>
+              </div>
+              <div class="code-line" id="p2-pline-2" data-tip="Base case: single element is sorted">
+                <span class="line-num">2</span>
+                <span>&nbsp;&nbsp;<b>if</b> hi − lo &lt; 1 <b>then return</b></span>
+              </div>
+              <div class="code-line" id="p2-pline-3" data-tip="Midpoint for splitting the subarray">
+                <span class="line-num">3</span>
+                <span>&nbsp;&nbsp;mid ← ⌊(lo + hi) / 2⌋</span>
+              </div>
+              <div class="code-line" id="p2-pline-4" data-tip="Spawn left half — runs in parallel">
+                <span class="line-num">4</span>
+                <span>&nbsp;&nbsp;<b>spawn</b> ParMergeSort(A, lo, mid) &nbsp;&nbsp;&nbsp;// parallel left</span>
+              </div>
+              <div class="code-line" id="p2-pline-5" data-tip="Call right half — continues on current thread">
+                <span class="line-num">5</span>
+                <span>&nbsp;&nbsp;<b>call</b> &nbsp;ParMergeSort(A, mid+1, hi) // parallel right</span>
+              </div>
+              <div class="code-line" id="p2-pline-6" data-tip="Join — wait for spawned left half to finish">
+                <span class="line-num">6</span>
+                <span>&nbsp;&nbsp;<b>sync</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// join</span>
+              </div>
+              <div class="code-line" id="p2-pline-7" data-tip="Merge the two sorted halves in-place">
+                <span class="line-num">7</span>
+                <span>&nbsp;&nbsp;Merge(A, lo, mid, hi)</span>
+              </div>
+              <div class="code-line" id="p2-pline-8" data-tip="Merge helper — copies into temp buffer">
+                <span class="line-num">8</span>
+                <span><b>function</b> Merge(A, lo, mid, hi)</span>
+              </div>
+              <div class="code-line" id="p2-pline-9" data-tip="Copy left [lo..mid] and right [mid+1..hi] to temp">
+                <span class="line-num">9</span>
+                <span>&nbsp;&nbsp;// left and right into temp buffer</span>
+              </div>
+              <div class="code-line" id="p2-pline-10" data-tip="Compare and write back in sorted order">
+                <span class="line-num">10</span>
+                <span>&nbsp;&nbsp;// merge back in sorted order</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Step Explanation</span></div>
+          <div class="panel-body">
+            <div class="explanation-box" id="p2-explanationBox">
+              Enter an array in <strong>Input &amp; Presets</strong> below,
+              then press <strong>Build</strong> in the controls above to start.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input & Presets -->
+      <div class="collapsible open" id="p2-sectionInput">
+        <div class="collapsible-header" onclick="toggleSection('p2-sectionInput')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Input &amp; Presets</span>
+            <span class="collapsible-hint">Enter comma-separated integers to sort</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="input-grid input-grid--1col">
+              <div class="input-group">
+                <label class="input-label" for="p2-inputArray">Array (comma-separated)</label>
+                <input class="input-field" type="text" id="p2-inputArray"
+                       value="38,27,43,3,9,82,10" placeholder="e.g. 38,27,43,3,9,82,10" />
+              </div>
+            </div>
+            <div class="presets-row">
+              <span class="presets-label">Presets</span>
+              <button class="preset-btn" onclick="loadPreset(2,'38,27,43,3,9,82,10,15')">Random 8</button>
+              <button class="preset-btn" onclick="loadPreset(2,'80,70,60,50,40,30,20,10')">Reverse 8</button>
+              <button class="preset-btn" onclick="loadPreset(2,'1,2,3,5,4,6,7,8')">Nearly sorted</button>
+              <button class="preset-btn" onclick="loadPreset(2,'1,1,2,3,5,8,13,21')"
+                      title="Fibonacci sequence">Fibonacci seq</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics & History -->
+      <div class="collapsible" id="p2-sectionStats">
+        <div class="collapsible-header" onclick="toggleSection('p2-sectionStats')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Statistics &amp; History</span>
+            <span class="collapsible-hint">Live counters and step log</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-value" id="p2-statComparisons">—</span>
+                <span class="stat-label">Comparisons</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p2-statMergeOps">—</span>
+                <span class="stat-label">Merge Operations</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p2-statDepth">—</span>
+                <span class="stat-label">Parallel Depth</span>
+              </div>
+            </div>
+            <div class="history-wrapper">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Phase</th><th>Subarray</th><th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="p2-historyBody">
+                  <tr>
+                    <td colspan="4"
+                      style="text-align:center;color:var(--text-muted);font-family:var(--font-ui);">
+                      No steps yet
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Educational Overview -->
+      <div class="collapsible" id="p2-sectionEdu">
+        <div class="collapsible-header" onclick="toggleSection('p2-sectionEdu')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Educational Overview</span>
+            <span class="collapsible-hint">Work, span, and parallelism analysis</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="edu-content">
+              <p class="edu-p">
+                <strong>Parallel Merge Sort</strong> extends classic merge sort using a
+                fork-join model. Each recursive call spawns two subtasks that run
+                concurrently, then syncs before merging. On a machine with unlimited
+                processors it achieves polylogarithmic span.
+              </p>
+              <div class="key-concept">
+                <div class="key-concept-title">Work vs Span</div>
+                <div class="key-concept-body">
+                  <strong>Work</strong> <span class="mono">T₁ = O(n log n)</span> — total operations
+                  as if sequential.<br/>
+                  <strong>Span</strong> <span class="mono">T∞ = O(log² n)</span> — critical path
+                  length with infinite processors.
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">Parallelism</div>
+                <div class="key-concept-body">
+                  Parallelism = Work / Span =
+                  <span class="mono">O(n log n / log² n) = O(n / log n)</span>.
+                  This means we can usefully employ up to <span class="mono">O(n / log n)</span>
+                  processors before returns diminish.
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">Amdahl's Law</div>
+                <div class="key-concept-body">
+                  Sequential fraction of the merge step limits speedup.
+                  A parallel merge (e.g. binary-search merge) reduces span to
+                  <span class="mono">O(log n)</span>, improving parallelism to
+                  <span class="mono">O(n)</span>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       PART 3 — EXTENDED EUCLIDEAN ALGORITHM
+  ═══════════════════════════════════════════════ -->
+  <div id="p3-section" style="display:none;">
+
+    <section class="viz-hero" id="p3-vizHero">
+      <div class="viz-hero__title-block">
+        <span class="viz-hero__badge">CLO-3</span>
+        <h1 class="viz-hero__title">Extended Euclidean</h1>
+        <span class="viz-hero__subtitle">Algorithm &amp; Modular Inverse</span>
+      </div>
+
+      <div class="viz-hero__status">
+        <div class="status-badge" id="p3-statusBadge">
+          <span class="status-dot"></span>
+          <span id="p3-statusText">Idle</span>
+        </div>
+      </div>
+
+      <div class="viz-canvas" id="p3-vizCanvas">
+        <div class="viz-idle-hint" id="p3-vizIdleHint">
+          <div class="viz-idle-hint__icon">∑</div>
+          <div class="viz-idle-hint__text">Press Build to begin</div>
+        </div>
+        <svg id="p3-vizSvg" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+      </div>
+
+      <!-- Floating pill controls -->
+      <div class="viz-controls-pill" id="p3-controlsPill">
+
+        <button class="pill-btn pill-btn--primary" id="p3-btnBuild">
+          <span class="pill-btn-icon">⚙</span> Build
+        </button>
+
+        <div class="pill-divider"></div>
+
+        <button class="pill-btn" id="p3-btnStep" disabled>
+          <span class="pill-btn-icon">→</span> Step
+        </button>
+        <button class="pill-btn" id="p3-btnPlay" disabled>
+          <span class="pill-btn-icon">▶</span> Play
+        </button>
+        <button class="pill-btn" id="p3-btnPause" disabled>
+          <span class="pill-btn-icon">⏸</span>
+        </button>
+        <button class="pill-btn" id="p3-btnReset" disabled>
+          <span class="pill-btn-icon">↺</span>
+        </button>
+
+        <div class="pill-divider"></div>
+
+        <div class="pill-speed-row">
+          <input type="range" class="pill-slider" id="p3-speedSlider"
+                 min="0.25" max="4" step="0.25" value="1" />
+          <span class="pill-speed-label" id="p3-speedValue">1×</span>
+        </div>
+
+        <div class="pill-divider"></div>
+
+        <span class="pill-step-counter" id="p3-stepCounter">— / —</span>
+
+        <div class="pill-divider"></div>
+
+        <div class="pill-legend">
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:var(--accent);"></div>
+            Active
+          </div>
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:#4CAF50;"></div>
+            Base case
+          </div>
+          <div class="pill-legend-item">
+            <div class="pill-legend-dot" style="background:#90CAF9;"></div>
+            Back-sub
+          </div>
+        </div>
+
+      </div>
+
+      <div class="scroll-hint">
+        <span>scroll</span>
+        <span>↓</span>
+      </div>
+    </section>
+
+    <div class="below-fold">
+
+      <!-- Pseudocode + Step explanation -->
+      <div class="info-row">
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Pseudocode</span></div>
+          <div class="panel-body">
+            <div class="pseudocode-block">
+              <div class="code-line" id="p3-pline-1" data-tip="Entry point — returns gcd, x, y">
+                <span class="line-num">1</span>
+                <span><b>function</b> extGCD(a, b)</span>
+              </div>
+              <div class="code-line" id="p3-pline-2" data-tip="Base case: gcd(a, 0) = a, Bézout: 1·a + 0·0 = a">
+                <span class="line-num">2</span>
+                <span>&nbsp;&nbsp;<b>if</b> b = 0 <b>then return</b> (a, 1, 0)</span>
+              </div>
+              <div class="code-line" id="p3-pline-3" data-tip="Integer quotient of a divided by b">
+                <span class="line-num">3</span>
+                <span>&nbsp;&nbsp;q ← ⌊a / b⌋</span>
+              </div>
+              <div class="code-line" id="p3-pline-4" data-tip="Remainder — next pair will be (b, r)">
+                <span class="line-num">4</span>
+                <span>&nbsp;&nbsp;r ← a mod b</span>
+              </div>
+              <div class="code-line" id="p3-pline-5" data-tip="Recursive call shrinks the problem each time">
+                <span class="line-num">5</span>
+                <span>&nbsp;&nbsp;(g, x₁, y₁) ← extGCD(b, r)</span>
+              </div>
+              <div class="code-line" id="p3-pline-6" data-tip="Back-substitute x using previous y coefficient">
+                <span class="line-num">6</span>
+                <span>&nbsp;&nbsp;x ← y₁</span>
+              </div>
+              <div class="code-line" id="p3-pline-7" data-tip="Back-substitute y using quotient and x₁">
+                <span class="line-num">7</span>
+                <span>&nbsp;&nbsp;y ← x₁ − q · y₁</span>
+              </div>
+              <div class="code-line" id="p3-pline-8" data-tip="Return gcd and Bézout coefficients x, y">
+                <span class="line-num">8</span>
+                <span>&nbsp;&nbsp;<b>return</b> (g, x, y)</span>
+              </div>
+              <div class="code-line" id="p3-pline-9" data-tip="Inverse only exists when gcd(a, n) = 1">
+                <span class="line-num">9</span>
+                <span><b>function</b> modInverse(a, n)</span>
+              </div>
+              <div class="code-line" id="p3-pline-10" data-tip="x mod n from Bézout's identity ax + ny = 1">
+                <span class="line-num">10</span>
+                <span>&nbsp;&nbsp;<b>return</b> x mod n</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Step Explanation</span></div>
+          <div class="panel-body">
+            <div class="explanation-box" id="p3-explanationBox">
+              Enter values in <strong>Input &amp; Presets</strong> below,
+              then press <strong>Build</strong> in the controls above to start.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Input & Presets -->
+      <div class="collapsible open" id="p3-sectionInput">
+        <div class="collapsible-header" onclick="toggleSection('p3-sectionInput')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Input &amp; Presets</span>
+            <span class="collapsible-hint">Enter custom values or choose an example</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="input-grid">
+              <div class="input-group">
+                <label class="input-label" for="p3-inputA">Value a</label>
+                <input class="input-field" type="number" id="p3-inputA" value="35" min="1" />
+              </div>
+              <div class="input-group">
+                <label class="input-label" for="p3-inputB">Value b</label>
+                <input class="input-field" type="number" id="p3-inputB" value="15" min="1" />
+              </div>
+              <div class="input-group">
+                <label class="input-label" for="p3-inputN">Modulus n</label>
+                <input class="input-field" type="number" id="p3-inputN" value="26" min="2" />
+              </div>
+            </div>
+            <div class="presets-row">
+              <span class="presets-label">Presets</span>
+              <button class="preset-btn" onclick="loadPreset(3,35,15,26)">35, 15</button>
+              <button class="preset-btn" onclick="loadPreset(3,17,13,20)">17, 13</button>
+              <button class="preset-btn" onclick="loadPreset(3,252,198,11)">252, 198</button>
+              <button class="preset-btn" onclick="loadPreset(3,89,55,144)"
+                      title="Fibonacci — worst case (Lamé's theorem)">⚠ Fibonacci</button>
+              <button class="preset-btn" onclick="loadPreset(3,3,26,26)">RSA-style</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statistics & History -->
+      <div class="collapsible" id="p3-sectionStats">
+        <div class="collapsible-header" onclick="toggleSection('p3-sectionStats')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Statistics &amp; History</span>
+            <span class="collapsible-hint">Live counters and step log</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-value" id="p3-statDivisions">—</span>
+                <span class="stat-label">Divisions</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p3-statGCD">—</span>
+                <span class="stat-label">GCD</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p3-statInverse">—</span>
+                <span class="stat-label">Inverse mod n</span>
+              </div>
+            </div>
+            <div class="history-wrapper">
+              <table class="history-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>a</th><th>b</th>
+                    <th>q = ⌊a/b⌋</th><th>r = a mod b</th>
+                    <th>x</th><th>y</th>
+                  </tr>
+                </thead>
+                <tbody id="p3-historyBody">
+                  <tr>
+                    <td colspan="7"
+                      style="text-align:center;color:var(--text-muted);font-family:var(--font-ui);">
+                      No steps yet
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Educational Overview -->
+      <div class="collapsible" id="p3-sectionEdu">
+        <div class="collapsible-header" onclick="toggleSection('p3-sectionEdu')">
+          <div class="collapsible-header-left">
+            <span class="collapsible-title">Educational Overview</span>
+            <span class="collapsible-hint">Key concepts, algorithm explanation and worked example</span>
+          </div>
+          <span class="collapsible-chevron">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="collapsible-inner">
+            <div class="edu-content">
+              <p class="edu-p">
+                The <strong>Euclidean Algorithm</strong> (≈300 BC) computes gcd(a, b)
+                by repeatedly replacing (a, b) with (b, a mod b) until the remainder
+                is zero. It runs in <strong>O(log min(a, b))</strong> divisions —
+                one of the oldest known algorithms.
+              </p>
+              <div class="key-concept">
+                <div class="key-concept-title">Bézout's Identity</div>
+                <div class="key-concept-body">
+                  For any integers a and b there exist x, y such that
+                  <span class="mono">ax + by = gcd(a, b)</span>.
+                  The extended algorithm finds x and y via back-substitution.
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">Modular Inverse</div>
+                <div class="key-concept-body">
+                  If <span class="mono">gcd(a, n) = 1</span> then
+                  <span class="mono">a⁻¹ mod n = x mod n</span>
+                  where ax + ny = 1. This is the foundation of RSA and Diffie-Hellman.
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">Lamé's Theorem — Worst Case</div>
+                <div class="key-concept-body">
+                  Divisions never exceed <span class="mono">5 × log₁₀(min(a, b))</span>.
+                  Worst case is consecutive <strong>Fibonacci numbers</strong> — try the preset above.
+                </div>
+              </div>
+              <p class="edu-p">
+                <strong>Worked Example — gcd(35, 15):</strong><br/>
+                35 = 2·15 + 5 &nbsp;→&nbsp; 15 = 3·5 + 0 &nbsp;→&nbsp; gcd = <strong>5</strong><br/>
+                Back-sub: 5 = 35 − 2·15 &nbsp;∴&nbsp; x = 1, y = −2<br/>
+                Verify: 35(1) + 15(−2) = 5 ✓
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+
+    // ═══════════════════════════════════════════════
+    // THEME CONTROLLER
+    // ═══════════════════════════════════════════════
+
+    const ThemeController = (() => {
+      const KEY = 'cud-theme';
+
+      function apply(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('themeIcon').textContent  = theme === 'dark' ? '🌙' : '☀️';
+        document.getElementById('themeLabel').textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+        try { localStorage.setItem(KEY, theme); } catch (_) {}
+      }
+
+      function init() {
+        let saved = 'dark';
+        try { saved = localStorage.getItem(KEY) || 'dark'; } catch (_) {}
+        apply(saved);
+        document.getElementById('themeToggle').addEventListener('click', () => {
+          apply(document.documentElement.getAttribute('data-theme') === 'dark'
+            ? 'light' : 'dark');
+        });
+      }
+
+      return { init };
+    })();
+
+    // ═══════════════════════════════════════════════
+    // TAB CONTROLLER
+    // ═══════════════════════════════════════════════
+
+    const TabController = (() => {
+      const ACCENTS = {
+        1: ['#CC0000',  'rgba(204,0,0,0.20)',    'rgba(204,0,0,0.35)'],
+        2: ['#E8440A',  'rgba(232,68,10,0.20)',  'rgba(232,68,10,0.35)'],
+        3: ['#C2185B',  'rgba(194,24,91,0.20)',  'rgba(194,24,91,0.35)'],
+      };
+
+      function show(n) {
+        [1, 2, 3].forEach(i => {
+          document.getElementById(`p${i}-section`).style.display = i === n ? '' : 'none';
+        });
+        document.querySelectorAll('.nav-item').forEach(el =>
+          el.classList.toggle('active', +el.dataset.part === n)
+        );
+        const [a, d, g] = ACCENTS[n];
+        const s = document.documentElement.style;
+        s.setProperty('--accent',      a);
+        s.setProperty('--accent-dim',  d);
+        s.setProperty('--accent-glow', g);
+      }
+
+      function init() {
+        document.querySelectorAll('.nav-item').forEach(el =>
+          el.addEventListener('click', () => show(+el.dataset.part))
+        );
+        show(1);
+      }
+
+      return { init, show };
+    })();
+
+    // ═══════════════════════════════════════════════
+    // UTILITIES
+    // ═══════════════════════════════════════════════
+
+    function toggleSection(id) {
+      document.getElementById(id).classList.toggle('open');
+    }
+
+    function loadPreset(part, ...args) {
+      if (part === 1) {
+        document.getElementById('p1-inputDims').value = args[0];
+      } else if (part === 2) {
+        document.getElementById('p2-inputArray').value = args[0];
+      } else if (part === 3) {
+        document.getElementById('p3-inputA').value = args[0];
+        document.getElementById('p3-inputB').value = args[1];
+        document.getElementById('p3-inputN').value = args[2];
+      }
+    }
+
+    // ── Pill show helper ────────────────────────────
+    function makePillController(heroId, pillId) {
+      const hero = document.getElementById(heroId);
+      const pill = document.getElementById(pillId);
+      let timer = null;
+
+      function show() {
+        pill.style.opacity = '1';
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          if (!pill.classList.contains('pinned')) pill.style.opacity = '';
+        }, 3000);
+      }
+
+      hero.addEventListener('mousemove', show);
+      pill.addEventListener('mouseenter', () => { clearTimeout(timer); pill.style.opacity = '1'; });
+      pill.addEventListener('mouseleave', show);
+    }
+
+    // ═══════════════════════════════════════════════
+    // PART 1 — MATRIX CHAIN MULTIPLICATION
+    // ═══════════════════════════════════════════════
+
+    const Part1 = (() => {
+
+      const state = {
+        steps: [], currentStep: -1,
+        isPlaying: false, speed: 1,
+        status: 'idle', playTimer: null, p: [],
+      };
+
+      // ── Core DP algorithm ─────────────────────────
+      function computeData(p) {
+        const n = p.length - 1;
+        const INF = Infinity;
+        // 1-indexed tables
+        const m = Array.from({length: n+2}, () => new Array(n+2).fill(INF));
+        const s = Array.from({length: n+2}, () => new Array(n+2).fill(0));
+        for (let i = 1; i <= n; i++) m[i][i] = 0;
+
+        const steps = [];
+
+        for (let len = 2; len <= n; len++) {
+          for (let i = 1; i <= n - len + 1; i++) {
+            const j = i + len - 1;
+            for (let k = i; k <= j - 1; k++) {
+              const left  = m[i][k];
+              const right = m[k+1][j];
+              const mult  = p[i-1] * p[k] * p[j];
+              const q     = left + right + mult;
+              const prev  = m[i][j];
+              const isBetter = q < prev;
+              if (isBetter) { m[i][j] = q; s[i][j] = k; }
+
+              const fmt = v => v === INF ? '∞' : v.toLocaleString();
+              steps.push({
+                phase: 'test', i, j, k, q, isBetter, len,
+                mSnap: m.map(r => [...r]),
+                line: isBetter ? 9 : 8,
+                explanation:
+                  `<strong>Chain [${i}..${j}], split k=${k}:</strong> `
+                  + `m[${i}][${k}] + m[${k+1}][${j}] + p[${i-1}]·p[${k}]·p[${j}] `
+                  + `= ${fmt(left)} + ${fmt(right)} + ${p[i-1]}·${p[k]}·${p[j]} `
+                  + `= <span class="mono">${q.toLocaleString()}</span>`
+                  + (isBetter
+                    ? ` — <strong>new best</strong> for m[${i}][${j}] (was ${fmt(prev)})`
+                    : ` — no improvement (best: ${fmt(prev)})`)
+              });
+            }
+          }
+        }
+
+        steps.push({
+          phase: 'result',
+          mSnap: m.map(r => [...r]),
+          line: 10,
+          explanation:
+            `<strong>Done.</strong> Optimal cost = `
+            + `<span class="mono">${m[1][n].toLocaleString()}</span> `
+            + `scalar multiplications. First split at k=${s[1][n]}.`
+        });
+
+        return { steps, n, m, s };
+      }
+
+      // ── Build ─────────────────────────────────────
+      function buildSteps() {
+        const raw = document.getElementById('p1-inputDims').value;
+        const p = raw.split(',').map(v => parseInt(v.trim())).filter(v => v > 0 && !isNaN(v));
+        if (p.length < 3) return;
+
+        const { steps, n, m, s } = computeData(p);
+        state.steps = steps;
+        state.p     = p;
+
+        // Stats
+        document.getElementById('p1-statMultiplications').textContent =
+          m[1][n] === Infinity ? '—' : m[1][n].toLocaleString();
+        document.getElementById('p1-statTablesFilled').textContent =
+          n * (n - 1) / 2;
+        document.getElementById('p1-statOptimalSplit').textContent =
+          s[1][n] || '—';
+
+        // History table
+        const tbody = document.getElementById('p1-historyBody');
+        tbody.innerHTML = '';
+        steps.filter(st => st.phase === 'test').forEach((st, ri) => {
+          const val = st.mSnap[st.i][st.j];
+          const tr  = document.createElement('tr');
+          tr.innerHTML =
+            `<td>${ri+1}</td><td>${st.i}</td><td>${st.j}</td>`
+            + `<td>${st.k}</td>`
+            + `<td>${val === Infinity ? '∞' : val.toLocaleString()}</td>`;
+          tr.addEventListener('click', () => renderStep(ri));
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('p1-vizIdleHint').style.display = 'none';
+        document.getElementById('p1-vizSvg').style.display = '';
+        ['p1-btnStep','p1-btnPlay','p1-btnReset'].forEach(id =>
+          document.getElementById(id).disabled = false);
+        document.getElementById('p1-btnPause').disabled = true;
+
+        state.currentStep = 0;
+        updateStatus('ready');
+        renderStep(0);
+      }
+
+      // ── SVG: split layout ─────────────────────────
+      function drawSVG(idx) {
+        const svg = document.getElementById('p1-vizSvg');
+        const W   = svg.clientWidth  || 900;
+        const H   = svg.clientHeight || 500;
+        svg.innerHTML = '';
+        if (!state.steps.length) return;
+
+        const st = state.steps[idx];
+        if (!st) return;
+
+        // Resolve CSS tokens
+        const cs = document.documentElement;
+        const g  = k => getComputedStyle(cs).getPropertyValue(k).trim();
+        const accent     = g('--accent');
+        const accentDim  = g('--accent-dim');
+        const bgSurface  = g('--bg-surface');
+        const bgElevated = g('--bg-elevated');
+        const textPri    = g('--text-primary');
+        const textSec    = g('--text-secondary');
+        const textMuted  = g('--text-muted');
+        const border     = g('--border');
+
+        function el(tag, attrs, text) {
+          const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+          for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+          if (text !== undefined) e.textContent = text;
+          return e;
+        }
+
+        const p = state.p;
+        const n = p.length - 1;
+        const m = st.mSnap;
+        const subs = ['₁','₂','₃','₄','₅','₆','₇','₈','₉'];
+
+        // ── Left panel: chain diagram ────────────────
+        const leftW  = W * 0.48;
+        const leftCX = leftW / 2;
+
+        // Section label
+        svg.appendChild(el('text', {
+          x: leftCX, y: 16,
+          'font-family': 'sans-serif', 'font-size': 10, 'font-weight': 700,
+          fill: textMuted, 'text-anchor': 'middle', 'letter-spacing': '0.8'
+        }, 'CHAIN  DIAGRAM'));
+
+        // Matrix box geometry
+        const maxRectW  = Math.min(56, Math.max(28, (leftW - 48) / n - 10));
+        const rectW     = maxRectW;
+        const rectH     = Math.round(rectW * 1.35);
+        const usableW   = leftW - 40;
+        const gapW      = Math.max(6, (usableW - n * rectW) / (n - 1 || 1));
+        const totalW    = n * rectW + (n - 1) * gapW;
+        const startX    = leftCX - totalW / 2;
+        const matY      = H / 2 - rectH / 2 + 10;  // slight upward bias (room for bracket + dim label)
+
+        const rectCX = i => startX + (i - 1) * (rectW + gapW) + rectW / 2;
+
+        // Bracket above active range [i..j]
+        if (st.phase === 'test') {
+          const bLeft  = startX + (st.i - 1) * (rectW + gapW);
+          const bRight = startX + (st.j - 1) * (rectW + gapW) + rectW;
+          const bY     = matY - 30;
+          svg.appendChild(el('path', {
+            d: `M ${bLeft},${bY+14} L ${bLeft},${bY} L ${bRight},${bY} L ${bRight},${bY+14}`,
+            stroke: accent, 'stroke-width': 1.5, fill: 'none', 'stroke-linecap': 'round'
+          }));
+          svg.appendChild(el('text', {
+            x: (bLeft + bRight) / 2, y: bY - 5,
+            'font-family': 'sans-serif', 'font-size': 11, 'font-weight': 600,
+            fill: accent, 'text-anchor': 'middle'
+          }, `A${subs[st.i-1]||st.i}…A${subs[st.j-1]||st.j}`));
+
+          // Split marker between A_k and A_{k+1}
+          const splitX = startX + st.k * (rectW + gapW) - gapW / 2;
+          svg.appendChild(el('line', {
+            x1: splitX, y1: matY - 18, x2: splitX, y2: matY + rectH + 12,
+            stroke: accent, 'stroke-width': 1.5, 'stroke-dasharray': '4,3', 'stroke-linecap': 'round'
+          }));
+          svg.appendChild(el('text', {
+            x: splitX, y: matY + rectH + 24,
+            'font-family': '"SF Mono","Fira Code",monospace', 'font-size': 10, 'font-weight': 600,
+            fill: accent, 'text-anchor': 'middle'
+          }, `k=${st.k}`));
+        }
+
+        // Matrix rectangles
+        for (let mi = 1; mi <= n; mi++) {
+          const mx = startX + (mi - 1) * (rectW + gapW);
+          const inRange  = st.phase === 'test' && mi >= st.i && mi <= st.j;
+          const outside  = st.phase === 'test' && !inRange;
+
+          const fill   = inRange  ? accentDim  : bgElevated;
+          const stroke = inRange  ? accent     : border;
+          const alpha  = outside  ? '0.35'     : '1';
+
+          const grp = el('g', { opacity: alpha });
+
+          grp.appendChild(el('rect', {
+            x: mx, y: matY, width: rectW, height: rectH, rx: 7,
+            fill, stroke, 'stroke-width': inRange ? 1.5 : 1
+          }));
+          grp.appendChild(el('text', {
+            x: mx + rectW / 2, y: matY + rectH / 2 + 1,
+            'font-family': 'sans-serif', 'font-size': Math.min(14, rectW * 0.3),
+            'font-weight': 600,
+            fill: inRange ? accent : textSec,
+            'text-anchor': 'middle', 'dominant-baseline': 'middle'
+          }, `A${subs[mi-1] || mi}`));
+
+          // Dimension label below
+          if (p[mi-1] && p[mi]) {
+            grp.appendChild(el('text', {
+              x: mx + rectW / 2, y: matY + rectH + 14,
+              'font-family': '"SF Mono","Fira Code",monospace', 'font-size': 9,
+              fill: textMuted, 'text-anchor': 'middle'
+            }, `${p[mi-1]}×${p[mi]}`));
+          }
+
+          svg.appendChild(grp);
+        }
+
+        // ── Right panel: DP table ────────────────────
+        const tableLeft = W * 0.52;
+        const tableAreaW = W - tableLeft - 12;
+        const tableAreaH = H - 40;
+
+        svg.appendChild(el('text', {
+          x: tableLeft + tableAreaW / 2, y: 16,
+          'font-family': 'sans-serif', 'font-size': 10, 'font-weight': 700,
+          fill: textMuted, 'text-anchor': 'middle', 'letter-spacing': '0.8'
+        }, 'DP  TABLE'));
+
+        const cellSz = Math.min(58, Math.max(26,
+          Math.floor(Math.min(tableAreaW, tableAreaH) / (n + 1.4))));
+        const tblW   = (n + 1) * cellSz;
+        const tblH   = (n + 1) * cellSz;
+        const tblX   = tableLeft + (tableAreaW - tblW) / 2;
+        const tblY   = 26 + (tableAreaH - tblH) / 2;
+
+        // Column headers (j labels)
+        for (let j = 1; j <= n; j++) {
+          svg.appendChild(el('text', {
+            x: tblX + j * cellSz + cellSz / 2, y: tblY + cellSz * 0.55,
+            'font-family': 'sans-serif', 'font-size': 9, 'font-weight': 600,
+            fill: textMuted, 'text-anchor': 'middle', 'dominant-baseline': 'middle'
+          }, `${j}`));
+        }
+
+        // Row headers + cells
+        for (let i = 1; i <= n; i++) {
+          svg.appendChild(el('text', {
+            x: tblX + cellSz * 0.5, y: tblY + i * cellSz + cellSz / 2,
+            'font-family': 'sans-serif', 'font-size': 9, 'font-weight': 600,
+            fill: textMuted, 'text-anchor': 'middle', 'dominant-baseline': 'middle'
+          }, `${i}`));
+
+          for (let j = 1; j <= n; j++) {
+            if (j < i) continue;   // lower triangle — skip
+            const cx = tblX + j * cellSz;
+            const cy = tblY + i * cellSz;
+            const isCur  = st.phase === 'test' && i === st.i && j === st.j;
+            const isDiag = i === j;
+            const val    = m[i][j];
+            const filled = val !== Infinity;
+
+            const cellFill   = isCur ? accentDim : isDiag ? bgElevated : filled ? bgSurface : bgElevated;
+            const cellStroke = isCur ? accent    : border;
+            const textColor  = isCur ? accent    : isDiag ? textSec    : filled ? textSec   : textMuted;
+
+            svg.appendChild(el('rect', {
+              x: cx + 1, y: cy + 1, width: cellSz - 2, height: cellSz - 2, rx: 5,
+              fill: cellFill, stroke: cellStroke, 'stroke-width': isCur ? 1.5 : 1
+            }));
+
+            const dispVal  = isDiag ? '0' : !filled ? '—' : val.toLocaleString();
+            const fontSize = !filled || val < 1000 ? 11 : val < 10000 ? 9 : 7;
+            svg.appendChild(el('text', {
+              x: cx + cellSz / 2, y: cy + cellSz / 2,
+              'font-family': '"SF Mono","Fira Code",monospace',
+              'font-size': fontSize, fill: textColor,
+              'text-anchor': 'middle', 'dominant-baseline': 'middle'
+            }, dispVal));
+          }
+        }
+
+        // Subtle divider
+        svg.appendChild(el('line', {
+          x1: W * 0.5, y1: 28, x2: W * 0.5, y2: H - 16,
+          stroke: border, 'stroke-width': 1, 'stroke-dasharray': '4,4'
+        }));
+      }
+
+      // ── Render step ───────────────────────────────
+      function renderStep(i) {
+        if (i < 0 || i >= state.steps.length) return;
+        state.currentStep = i;
+        const st = state.steps[i];
+
+        for (let ln = 1; ln <= 10; ln++)
+          document.getElementById(`p1-pline-${ln}`).classList.remove('active');
+        document.getElementById(`p1-pline-${st.line}`).classList.add('active');
+
+        document.getElementById('p1-explanationBox').innerHTML = st.explanation;
+        document.getElementById('p1-stepCounter').textContent  = `${i + 1} / ${state.steps.length}`;
+
+        // Highlight matching history row (test steps only)
+        const testIdx = state.steps.slice(0, i + 1).filter(s => s.phase === 'test').length - 1;
+        document.querySelectorAll('#p1-historyBody tr').forEach((tr, ri) =>
+          tr.classList.toggle('current', ri === testIdx));
+
+        drawSVG(i);
+      }
+
+      // ── Status ───────────────────────────────────
+      function updateStatus(s) {
+        state.status = s;
+        document.getElementById('p1-statusBadge').className = `status-badge ${s}`;
+        document.getElementById('p1-statusText').textContent =
+          ({idle:'Idle',ready:'Ready',playing:'Playing',paused:'Paused',done:'Done'})[s] || s;
+      }
+
+      // ── Playback ──────────────────────────────────
+      function play() {
+        if (state.isPlaying) return;
+        if (state.currentStep >= state.steps.length - 1) state.currentStep = 0;
+        state.isPlaying = true;
+        updateStatus('playing');
+        document.getElementById('p1-btnPlay').disabled  = true;
+        document.getElementById('p1-btnPause').disabled = false;
+        document.getElementById('p1-btnStep').disabled  = true;
+        document.getElementById('p1-controlsPill').classList.add('pinned');
+        function tick() {
+          if (!state.isPlaying) return;
+          if (state.currentStep >= state.steps.length - 1) { pause(); updateStatus('done'); return; }
+          renderStep(++state.currentStep);
+          state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
+        }
+        state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
+      }
+
+      function pause() {
+        clearTimeout(state.playTimer);
+        state.isPlaying = false;
+        updateStatus(state.currentStep >= state.steps.length - 1 ? 'done' : 'paused');
+        document.getElementById('p1-btnPlay').disabled  = false;
+        document.getElementById('p1-btnPause').disabled = true;
+        document.getElementById('p1-btnStep').disabled  = state.currentStep >= state.steps.length - 1;
+        document.getElementById('p1-controlsPill').classList.remove('pinned');
+      }
+
+      function step() {
+        if (state.isPlaying || state.currentStep >= state.steps.length - 1) return;
+        renderStep(++state.currentStep);
+        if (state.currentStep >= state.steps.length - 1) {
+          updateStatus('done');
+          document.getElementById('p1-btnStep').disabled = true;
+          document.getElementById('p1-btnPlay').disabled = true;
+        }
+      }
+
+      function reset() {
+        clearTimeout(state.playTimer);
+        Object.assign(state, {steps:[],currentStep:-1,isPlaying:false,status:'idle',playTimer:null,p:[]});
+        document.getElementById('p1-vizIdleHint').style.display = '';
+        document.getElementById('p1-vizSvg').style.display  = 'none';
+        document.getElementById('p1-vizSvg').innerHTML      = '';
+        document.getElementById('p1-explanationBox').innerHTML =
+          'Enter matrix dimensions in <strong>Input &amp; Presets</strong> below, '
+          + 'then press <strong>Build</strong> in the controls above to start.';
+        document.getElementById('p1-stepCounter').textContent         = '— / —';
+        document.getElementById('p1-statMultiplications').textContent = '—';
+        document.getElementById('p1-statTablesFilled').textContent    = '—';
+        document.getElementById('p1-statOptimalSplit').textContent    = '—';
+        document.getElementById('p1-historyBody').innerHTML =
+          '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);'
+          + 'font-family:var(--font-ui);">No steps yet</td></tr>';
+        for (let ln = 1; ln <= 10; ln++)
+          document.getElementById(`p1-pline-${ln}`).classList.remove('active');
+        updateStatus('idle');
+        ['p1-btnStep','p1-btnPlay','p1-btnPause','p1-btnReset'].forEach(id =>
+          document.getElementById(id).disabled = true);
+      }
+
+      // ── Init ──────────────────────────────────────
+      function init() {
+        makePillController('p1-vizHero', 'p1-controlsPill');
+        document.getElementById('p1-speedSlider').addEventListener('input', function () {
+          document.getElementById('p1-speedValue').textContent = `${this.value}×`;
+          state.speed = +this.value;
+        });
+        document.getElementById('p1-btnBuild').addEventListener('click', buildSteps);
+        document.getElementById('p1-btnStep').addEventListener('click', step);
+        document.getElementById('p1-btnPlay').addEventListener('click', play);
+        document.getElementById('p1-btnPause').addEventListener('click', pause);
+        document.getElementById('p1-btnReset').addEventListener('click', reset);
+        window.addEventListener('resize', () => {
+          if (state.steps.length) drawSVG(state.currentStep);
+        });
+      }
+
+      return { init };
+    })();
+
+    // ═══════════════════════════════════════════════
+    // PART 2 — PARALLEL MERGE SORT
+    // ═══════════════════════════════════════════════
+
+    const Part2 = (() => {
+      const state = { steps: [], currentStep: 0, isPlaying: false, speed: 1, status: 'idle' };
+
+      function buildSteps() { /* TODO */ }
+      function renderStep(i) { /* TODO */ }
+      function play()  { /* TODO */ }
+      function pause() { /* TODO */ }
+      function step()  { /* TODO */ }
+      function reset() { /* TODO */ }
+
+      function init() {
+        makePillController('p2-vizHero', 'p2-controlsPill');
+        document.getElementById('p2-speedSlider').addEventListener('input', function () {
+          document.getElementById('p2-speedValue').textContent = `${this.value}×`;
+          state.speed = +this.value;
+        });
+        document.getElementById('p2-btnBuild').addEventListener('click', buildSteps);
+        document.getElementById('p2-btnStep').addEventListener('click', step);
+        document.getElementById('p2-btnPlay').addEventListener('click', play);
+        document.getElementById('p2-btnPause').addEventListener('click', pause);
+        document.getElementById('p2-btnReset').addEventListener('click', reset);
+      }
+
+      return { init };
+    })();
+
+    // ═══════════════════════════════════════════════
+    // PART 3 — EXTENDED EUCLIDEAN ALGORITHM
+    // ═══════════════════════════════════════════════
+
+    const Part3 = (() => {
+
+      const state = {
+        steps: [], currentStep: -1,
+        isPlaying: false, speed: 1,
+        status: 'idle', playTimer: null,
+      };
+
+      // ── Core algorithm ────────────────────────────
+      function computeData(a, b) {
+        const forward = [];
+        let ca = a, cb = b;
+        while (cb !== 0) {
+          const q = Math.floor(ca / cb), r = ca % cb;
+          forward.push({ a: ca, b: cb, q, r });
+          ca = cb; cb = r;
+        }
+        const gcd = ca;
+
+        // Back-substitute: x, y per level (deepest → shallowest)
+        const backX = new Array(forward.length);
+        const backY = new Array(forward.length);
+        let x1 = 1, y1 = 0;                       // base case returns (gcd, 1, 0)
+        for (let i = forward.length - 1; i >= 0; i--) {
+          backX[i] = y1;
+          backY[i] = x1 - forward[i].q * y1;
+          x1 = backX[i]; y1 = backY[i];
+        }
+        return { forward, gcd, backX, backY };
+      }
+
+      // ── Build steps ───────────────────────────────
+      function buildSteps() {
+        const a = parseInt(document.getElementById('p3-inputA').value) || 35;
+        const b = parseInt(document.getElementById('p3-inputB').value) || 15;
+        const n = parseInt(document.getElementById('p3-inputN').value) || 26;
+        if (a < 1 || b < 1) return;
+
+        const { forward, gcd, backX, backY } = computeData(a, b);
+        const finalX = forward.length ? backX[0] : 1;
+        const finalY = forward.length ? backY[0] : 0;
+        const inverse = gcd === 1 ? ((finalX % n + n) % n) : null;
+
+        state.steps = [];
+
+        // Forward (divide) steps
+        forward.forEach((f, i) => {
+          state.steps.push({
+            phase: 'forward', a: f.a, b: f.b, q: f.q, r: f.r,
+            gcd, x: backX[i], y: backY[i],
+            line: i === 0 ? 1 : 5,
+            explanation: `<strong>extGCD(${f.a}, ${f.b})</strong> — divide: `
+              + `${f.a} = <span class="mono">${f.q}</span> × ${f.b} `
+              + `+ <span class="mono">${f.r}</span>. Recurse with (${f.b}, ${f.r}).`
+          });
+        });
+
+        // Base case
+        state.steps.push({
+          phase: 'base', a: gcd, b: 0, q: null, r: null,
+          gcd, x: 1, y: 0, line: 2,
+          explanation: `<strong>Base case:</strong> b = 0 → gcd = <span class="mono">${gcd}</span>. `
+            + `Return (${gcd}, 1, 0). Back-substitution begins.`
+        });
+
+        // Back-sub steps (deepest → shallowest)
+        for (let i = forward.length - 1; i >= 0; i--) {
+          const f = forward[i];
+          const px = i < forward.length - 1 ? backX[i + 1] : 1;   // x₁ received from deeper call
+          const py = i < forward.length - 1 ? backY[i + 1] : 0;   // y₁ received from deeper call
+          state.steps.push({
+            phase: 'backsub', a: f.a, b: f.b, q: f.q, r: f.r,
+            gcd, x: backX[i], y: backY[i], line: 6,
+            explanation: `<strong>Back-sub at (${f.a}, ${f.b}):</strong> `
+              + `x = y₁ = <span class="mono">${backX[i]}</span>, `
+              + `y = x₁ − q·y₁ = ${px} − ${f.q}·${py} = <span class="mono">${backY[i]}</span>`
+          });
+        }
+
+        // Result
+        state.steps.push({
+          phase: 'result', a, b, gcd, x: finalX, y: finalY, inverse, n, line: 8,
+          explanation: `<strong>Result:</strong> gcd(${a}, ${b}) = <span class="mono">${gcd}</span>. `
+            + `Bézout: ${a}·${finalX} + ${b}·${finalY} = ${gcd}. `
+            + (inverse !== null
+              ? `Modular inverse: ${a}⁻¹ mod ${n} = <span class="mono">${inverse}</span>.`
+              : 'No modular inverse (gcd ≠ 1).')
+        });
+
+        // Stats
+        document.getElementById('p3-statDivisions').textContent = forward.length;
+        document.getElementById('p3-statGCD').textContent       = gcd;
+        document.getElementById('p3-statInverse').textContent   = inverse !== null ? inverse : 'N/A';
+
+        // History table (forward steps + base case, with pre-computed x, y)
+        const tbody = document.getElementById('p3-historyBody');
+        tbody.innerHTML = '';
+        forward.forEach((f, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${i+1}</td><td>${f.a}</td><td>${f.b}</td>`
+            + `<td>${f.q}</td><td>${f.r}</td><td>${backX[i]}</td><td>${backY[i]}</td>`;
+          tr.addEventListener('click', () => renderStep(i));
+          tbody.appendChild(tr);
+        });
+        const baseRow = document.createElement('tr');
+        baseRow.innerHTML = `<td>${forward.length+1}</td><td>${gcd}</td><td>0</td>`
+          + `<td>—</td><td>—</td><td>1</td><td>0</td>`;
+        baseRow.addEventListener('click', () => renderStep(forward.length));
+        tbody.appendChild(baseRow);
+
+        // Show canvas
+        document.getElementById('p3-vizIdleHint').style.display = 'none';
+        document.getElementById('p3-vizSvg').style.display = '';
+
+        // Buttons
+        document.getElementById('p3-btnStep').disabled  = false;
+        document.getElementById('p3-btnPlay').disabled  = false;
+        document.getElementById('p3-btnPause').disabled = true;
+        document.getElementById('p3-btnReset').disabled = false;
+
+        state.currentStep = 0;
+        updateStatus('ready');
+        renderStep(0);
+      }
+
+      // ── SVG visualization ─────────────────────────
+      function drawSVG(idx) {
+        const svg = document.getElementById('p3-vizSvg');
+        const W = svg.clientWidth  || 800;
+        const H = svg.clientHeight || 500;
+        svg.innerHTML = '';
+        if (!state.steps.length) return;
+
+        // Resolve CSS tokens (SVG attrs don't support CSS vars)
+        const cs = document.documentElement;
+        const g  = k => getComputedStyle(cs).getPropertyValue(k).trim();
+        const accent      = g('--accent');
+        const accentDim   = g('--accent-dim');
+        const bgSurface   = g('--bg-surface');
+        const bgElevated  = g('--bg-elevated');
+        const textSec     = g('--text-secondary');
+        const textMuted   = g('--text-muted');
+        const border      = g('--border');
+
+        const n       = state.steps.length;
+        const cardW   = Math.min(580, W - 80);
+        const cardH   = Math.min(50, Math.max(32, Math.floor((H - 60) / n) - 10));
+        const gap     = Math.min(14, Math.max(4, Math.floor((H - 60 - n * cardH) / n)));
+        const totalH  = n * (cardH + gap) - gap;
+        const startY  = Math.max(16, (H - totalH) / 2);
+        const cx      = W / 2;
+
+        function el(tag, attrs, text) {
+          const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+          for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+          if (text !== undefined) e.textContent = text;
+          return e;
+        }
+
+        const PHASE_TAG = { forward: 'CALL', base: 'BASE', backsub: 'BACK', result: 'DONE' };
+        const PHASE_CLR = { base: '#4CAF50', backsub: '#90CAF9' };
+
+        state.steps.forEach((s, i) => {
+          const y      = startY + i * (cardH + gap);
+          const x      = cx - cardW / 2;
+          const isCur  = i === idx;
+          const isPast = i < idx;
+
+          // Card
+          svg.appendChild(el('rect', {
+            x, y, width: cardW, height: cardH, rx: 8,
+            fill:   isCur ? accentDim : isPast ? bgSurface : bgElevated,
+            stroke: isCur ? accent    : border,
+            'stroke-width': isCur ? 2 : 1
+          }));
+
+          // Left stripe on current
+          if (isCur) svg.appendChild(el('rect', {
+            x, y: y + 4, width: 3, height: cardH - 8, rx: 2,
+            fill: accent
+          }));
+
+          // Equation label
+          const eq =
+            s.phase === 'forward' ? `extGCD(${s.a}, ${s.b})  →  ${s.a} = ${s.q}·${s.b} + ${s.r}` :
+            s.phase === 'base'    ? `extGCD(${s.a}, 0)  →  gcd = ${s.a}, return (${s.gcd}, 1, 0)` :
+            s.phase === 'backsub' ? `return (${s.gcd}, ${s.x}, ${s.y})  at level (${s.a}, ${s.b})` :
+            `gcd = ${s.gcd},  x = ${s.x},  y = ${s.y}${s.inverse !== null ? `,  inv = ${s.inverse}` : ''}`;
+
+          const fs = Math.min(13, Math.max(9, cardH * 0.26));
+          svg.appendChild(el('text', {
+            x: x + 14, y: y + cardH / 2 + 1,
+            'font-family': "\"SF Mono\", \"Fira Code\", monospace",
+            'font-size': fs,
+            fill: isCur ? accent : isPast ? textSec : textMuted,
+            'dominant-baseline': 'middle'
+          }, eq));
+
+          // Phase tag
+          const tagClr = isCur ? accent : (PHASE_CLR[s.phase] || textMuted);
+          svg.appendChild(el('text', {
+            x: x + cardW - 12, y: y + cardH / 2 + 1,
+            'font-family': 'sans-serif',
+            'font-size': 9, 'font-weight': 700,
+            fill: tagClr, 'text-anchor': 'end', 'dominant-baseline': 'middle'
+          }, PHASE_TAG[s.phase] || ''));
+
+          // Connector arrow to next card
+          if (i < n - 1) {
+            const y1 = y + cardH + 1, y2 = y + cardH + gap - 1;
+            const ac = i < idx ? textSec : textMuted;
+            svg.appendChild(el('line', {
+              x1: cx, y1, x2: cx, y2: y2 - 5,
+              stroke: ac, 'stroke-width': 1, 'stroke-dasharray': '3,2'
+            }));
+            svg.appendChild(el('polygon', {
+              points: `${cx},${y2} ${cx-4},${y2-6} ${cx+4},${y2-6}`,
+              fill: ac
+            }));
+          }
+        });
+      }
+
+      // ── Render step ───────────────────────────────
+      function renderStep(i) {
+        if (i < 0 || i >= state.steps.length) return;
+        state.currentStep = i;
+        const s = state.steps[i];
+
+        // Pseudocode highlight
+        for (let ln = 1; ln <= 10; ln++)
+          document.getElementById(`p3-pline-${ln}`).classList.remove('active');
+        document.getElementById(`p3-pline-${s.line}`).classList.add('active');
+        if (s.phase === 'backsub')
+          document.getElementById('p3-pline-7').classList.add('active');
+
+        // Explanation
+        document.getElementById('p3-explanationBox').innerHTML = s.explanation;
+
+        // Counter
+        document.getElementById('p3-stepCounter').textContent = `${i + 1} / ${state.steps.length}`;
+
+        // History row highlight (only forward + base rows in table)
+        const rows = document.querySelectorAll('#p3-historyBody tr');
+        rows.forEach((tr, ri) => tr.classList.toggle('current', ri === i));
+
+        // SVG
+        drawSVG(i);
+      }
+
+      // ── Status badge ──────────────────────────────
+      function updateStatus(s) {
+        state.status = s;
+        document.getElementById('p3-statusBadge').className = `status-badge ${s}`;
+        document.getElementById('p3-statusText').textContent =
+          ({ idle:'Idle', ready:'Ready', playing:'Playing', paused:'Paused', done:'Done' })[s] || s;
+      }
+
+      // ── Playback ──────────────────────────────────
+      function play() {
+        if (state.isPlaying) return;
+        if (state.currentStep >= state.steps.length - 1) state.currentStep = 0;
+        state.isPlaying = true;
+        updateStatus('playing');
+        document.getElementById('p3-btnPlay').disabled  = true;
+        document.getElementById('p3-btnPause').disabled = false;
+        document.getElementById('p3-btnStep').disabled  = true;
+        document.getElementById('p3-controlsPill').classList.add('pinned');
+        function tick() {
+          if (!state.isPlaying) return;
+          if (state.currentStep >= state.steps.length - 1) {
+            pause(); updateStatus('done'); return;
+          }
+          renderStep(++state.currentStep);
+          state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
+        }
+        state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
+      }
+
+      function pause() {
+        clearTimeout(state.playTimer);
+        state.isPlaying = false;
+        updateStatus(state.currentStep >= state.steps.length - 1 ? 'done' : 'paused');
+        document.getElementById('p3-btnPlay').disabled  = false;
+        document.getElementById('p3-btnPause').disabled = true;
+        document.getElementById('p3-btnStep').disabled  = state.currentStep >= state.steps.length - 1;
+        document.getElementById('p3-controlsPill').classList.remove('pinned');
+      }
+
+      function step() {
+        if (state.isPlaying || state.currentStep >= state.steps.length - 1) return;
+        renderStep(++state.currentStep);
+        if (state.currentStep >= state.steps.length - 1) {
+          updateStatus('done');
+          document.getElementById('p3-btnStep').disabled = true;
+          document.getElementById('p3-btnPlay').disabled = true;
+        }
+      }
+
+      function reset() {
+        clearTimeout(state.playTimer);
+        Object.assign(state, { steps:[], currentStep:-1, isPlaying:false, status:'idle', playTimer:null });
+        document.getElementById('p3-vizIdleHint').style.display = '';
+        document.getElementById('p3-vizSvg').style.display  = 'none';
+        document.getElementById('p3-vizSvg').innerHTML      = '';
+        document.getElementById('p3-explanationBox').innerHTML =
+          'Enter values in <strong>Input &amp; Presets</strong> below, '
+          + 'then press <strong>Build</strong> in the controls above to start.';
+        document.getElementById('p3-stepCounter').textContent     = '— / —';
+        document.getElementById('p3-statDivisions').textContent   = '—';
+        document.getElementById('p3-statGCD').textContent         = '—';
+        document.getElementById('p3-statInverse').textContent     = '—';
+        document.getElementById('p3-historyBody').innerHTML =
+          '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);'
+          + 'font-family:var(--font-ui);">No steps yet</td></tr>';
+        for (let ln = 1; ln <= 10; ln++)
+          document.getElementById(`p3-pline-${ln}`).classList.remove('active');
+        updateStatus('idle');
+        ['p3-btnStep','p3-btnPlay','p3-btnPause','p3-btnReset'].forEach(id =>
+          document.getElementById(id).disabled = true
+        );
+      }
+
+      // ── Init ──────────────────────────────────────
+      function init() {
+        makePillController('p3-vizHero', 'p3-controlsPill');
+        document.getElementById('p3-speedSlider').addEventListener('input', function () {
+          document.getElementById('p3-speedValue').textContent = `${this.value}×`;
+          state.speed = +this.value;
+        });
+        document.getElementById('p3-btnBuild').addEventListener('click', buildSteps);
+        document.getElementById('p3-btnStep').addEventListener('click', step);
+        document.getElementById('p3-btnPlay').addEventListener('click', play);
+        document.getElementById('p3-btnPause').addEventListener('click', pause);
+        document.getElementById('p3-btnReset').addEventListener('click', reset);
+        window.addEventListener('resize', () => {
+          if (state.steps.length) drawSVG(state.currentStep);
+        });
+      }
+
+      return { init };
+    })();
+
+    // ═══════════════════════════════════════════════
+    // BOOT
+    // ═══════════════════════════════════════════════
+
+    document.addEventListener('DOMContentLoaded', () => {
+      ThemeController.init();
+      TabController.init();   // shows Part 1, hides 2 & 3
+      Part1.init();
+      Part2.init();
+      Part3.init();
+    });
+
+  </script>
+
+</body>
+</html>
