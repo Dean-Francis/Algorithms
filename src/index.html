@@ -719,16 +719,22 @@
       padding-top: 20px;
       border-top: 1px solid var(--border);
     }
+    @keyframes p3LineIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to   { opacity: 1; transform: none; }
+    }
     .p3-bc-line {
       font-family: var(--font-mono);
       font-size: clamp(0.82rem, 1.7vw, 1.05rem);
       line-height: 2.4; white-space: pre;
       position: relative; padding-left: 16px;
       color: var(--text-muted);
-      transition: color 0.25s var(--ease);
     }
-    .p3-bc-line.seen { color: var(--text-secondary); }
-    .p3-bc-line.cur  { color: var(--accent); }
+    .p3-bc-line.seen { color: var(--text-secondary); opacity: 0.65; }
+    .p3-bc-line.cur  {
+      color: var(--accent);
+      animation: p3LineIn 220ms cubic-bezier(0.25, 0, 0, 1) both;
+    }
     .p3-bc-line.cur::before {
       content: '';
       position: absolute; left: 0; top: 50%;
@@ -1409,12 +1415,8 @@
             Active
           </div>
           <div class="pill-legend-item">
-            <div class="pill-legend-dot" style="background:#4CAF50;"></div>
-            Base case
-          </div>
-          <div class="pill-legend-item">
-            <div class="pill-legend-dot" style="background:#90CAF9;"></div>
-            Back-sub
+            <div class="pill-legend-dot" style="background:var(--text-secondary); opacity:0.65;"></div>
+            Completed
           </div>
         </div>
 
@@ -1609,10 +1611,14 @@
                 </div>
               </div>
               <div class="key-concept">
-                <div class="key-concept-title">Lamé's Theorem — Worst Case</div>
+                <div class="key-concept-title">Complexity &amp; Worst Case</div>
                 <div class="key-concept-body">
-                  Divisions never exceed <span class="mono">5 × log₁₀(min(a, b))</span>.
-                  Worst case is consecutive <strong>Fibonacci numbers</strong> — try the preset above.
+                  <ul style="margin:0; padding-left:1.2em; line-height:1.9;">
+                    <li><strong>Time:</strong> O(log min(a, b)) divisions — logarithmic in the smaller input</li>
+                    <li><strong>Space:</strong> O(log min(a, b)) call stack depth; O(1) if iterative</li>
+                    <li><strong>Worst case (Lamé's theorem):</strong> consecutive Fibonacci numbers — divisions never exceed 5 × log₁₀(min(a, b))</li>
+                    <li><strong>Try it:</strong> the ⚠ Fibonacci preset above uses a = 144, n = 89</li>
+                  </ul>
                 </div>
               </div>
               <p class="edu-p">
@@ -2413,6 +2419,9 @@
           }
         });
 
+        // Complexity suffix shown on final steps
+        const complexitySuffix = `<br><span style="opacity:0.5;font-size:0.95em;">Completed in <strong>${forward.length} division${forward.length !== 1 ? 's' : ''}</strong> — O(log min(a, b)) complexity.</span>`;
+
         // Result step
         state.steps.push({
           phase: 'result', a, b, gcd, x: finalX, y: finalY, inverse, line: 8,
@@ -2421,10 +2430,12 @@
               + (gcd === 1
                 ? ` Since gcd(e, φ(n)) = 1, the private key d exists. Press <strong>Continue</strong> to compute d = e⁻¹ mod φ(n).`
                 : ` Since gcd(e, φ(n)) ≠ 1, no private key exists — choose a different e.`)
+              + complexitySuffix
             : `<strong>Bézout's Identity:</strong> ${a}·${finalX} + ${b}·${finalY} = ${gcd}.`
               + (gcd === 1
                 ? ` Since gcd = 1, a modular inverse exists. Press <strong>Continue</strong> to compute ${a}⁻¹ mod ${b}.`
                 : ` Since gcd ≠ 1, no modular inverse exists for these values.`)
+              + complexitySuffix
         });
         // Modular inverse step (only when gcd = 1)
         if (gcd === 1) {
@@ -2439,10 +2450,12 @@
               + `Taking both sides mod φ(n): <span class="mono">e·${fmtX} ≡ 1 (mod φ(n))</span><br>`
               + `Therefore <span class="mono">d = e⁻¹ mod φ(n) = ${fmtX} mod ${b} = <strong>${inverse}</strong></span><br>`
               + `In RSA: d is the <strong>private key</strong> — the decryption exponent.`
+              + complexitySuffix
             : `<strong>Modular Inverse:</strong><br>`
               + `From Bézout: <span class="mono">${a}·${fmtX} + ${b}·${fmtY} = 1</span><br>`
               + `Taking both sides mod ${b}: <span class="mono">${a}·${fmtX} ≡ 1 (mod ${b})</span><br>`
-              + `Therefore <span class="mono">${a}⁻¹ mod ${b} = ${fmtX} mod ${b} = <strong>${inverse}</strong></span>`;
+              + `Therefore <span class="mono">${a}⁻¹ mod ${b} = ${fmtX} mod ${b} = <strong>${inverse}</strong></span>`
+              + complexitySuffix;
           state.steps.push({
             phase: 'mod-inverse', a, b, x: finalX, y: finalY, inverse, line: 10,
             invLine, explanation: invExplanation
