@@ -461,7 +461,7 @@
       background: var(--bg-elevated); border-radius: var(--radius-md);
       border-left: 3px solid var(--accent); padding: var(--sp-md);
       font-size: var(--text-sm); color: var(--text-secondary);
-      line-height: 1.65; min-height: 52px; display: flex; align-items: center;
+      line-height: 1.75; min-height: 52px; display: block;
     }
 
     .explanation-box strong { color: var(--text-primary); }
@@ -654,6 +654,102 @@
       .viz-hero { margin-bottom: 52px; }
       .viz-controls-pill { bottom: 70px; }
     }
+
+
+    /* ─── Part 3 — Whiteboard visualization ──────────── */
+    .p3-ov {
+      position: absolute; inset: 0; z-index: 5;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-base);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.45s var(--ease);
+    }
+    .p3-ov.visible { opacity: 1; pointer-events: auto; }
+    .p3-ov__body {
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      animation: p3FadeUp 0.45s var(--ease-spring);
+    }
+    @keyframes p3FadeUp {
+      from { opacity: 0; transform: translateY(28px) scale(0.95); }
+      to   { opacity: 1; transform: none; }
+    }
+    .p3-ov__label {
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .p3-ov__eq-xl {
+      font-family: var(--font-mono);
+      font-size: clamp(2.2rem, 5vw, 4.5rem);
+      font-weight: 600; color: var(--accent); line-height: 1.15;
+    }
+    .p3-ov__eq-lg {
+      font-family: var(--font-mono);
+      font-size: clamp(1.5rem, 3.5vw, 2.8rem);
+      color: var(--text-primary); line-height: 1.3;
+    }
+    .p3-ov__eq-md {
+      font-family: var(--font-mono);
+      font-size: clamp(1rem, 2.2vw, 1.8rem);
+      color: var(--text-secondary); line-height: 1.4;
+    }
+    .p3-ov__gcd {
+      font-family: var(--font-mono);
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700; color: #4CAF50; line-height: 1;
+    }
+    .p3-ov__inv {
+      font-family: var(--font-mono);
+      font-size: clamp(0.9rem, 2vw, 1.5rem);
+      color: #90CAF9;
+    }
+    .p3-ov__sep { width: 56px; height: 1px; background: var(--border); }
+
+    .p3-back-chain {
+      position: absolute; inset: 0; z-index: 3;
+      overflow-y: auto; overflow-x: hidden;
+      padding: 130px 50px 140px;
+    }
+    .p3-bc-header {
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.8px; text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 28px; margin-bottom: 16px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    .p3-bc-line {
+      font-family: var(--font-mono);
+      font-size: clamp(0.82rem, 1.7vw, 1.05rem);
+      line-height: 2.4; white-space: pre;
+      position: relative; padding-left: 16px;
+      color: var(--text-muted);
+      transition: color 0.25s var(--ease);
+    }
+    .p3-bc-line.seen { color: var(--text-secondary); }
+    .p3-bc-line.cur  { color: var(--accent); }
+    .p3-bc-line.cur::before {
+      content: '';
+      position: absolute; left: 0; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 60%;
+      background: var(--accent);
+      border-radius: var(--radius-pill);
+    }
+    .p3-continue-btn {
+      position: absolute; bottom: 18%; left: 50%; transform: translateX(-50%);
+      z-index: 6;
+      padding: 10px 28px;
+      background: var(--accent);
+      color: #fff;
+      border: none; border-radius: var(--radius-pill);
+      font-family: var(--font-ui); font-size: var(--text-sm); font-weight: 600;
+      letter-spacing: 0.3px; cursor: pointer;
+      transition: opacity 0.2s var(--ease), transform 0.15s var(--ease);
+      white-space: nowrap;
+    }
+    .p3-continue-btn:hover { opacity: 0.85; transform: translateX(-50%) scale(1.03); }
 
   </style>
 </head>
@@ -1266,6 +1362,9 @@
           <div class="viz-idle-hint__text">Press Build to begin</div>
         </div>
         <svg id="p3-vizSvg" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+        <div id="p3-overlay" class="p3-ov" style="display:none;"></div>
+        <div id="p3-backChain" class="p3-back-chain" style="display:none;"></div>
+        <button id="p3-continueBtn" class="p3-continue-btn" style="display:none;"></button>
       </div>
 
       <!-- Floating pill controls -->
@@ -1405,26 +1504,23 @@
           <div class="collapsible-inner">
             <div class="input-grid">
               <div class="input-group">
-                <label class="input-label" for="p3-inputA">Value a</label>
-                <input class="input-field" type="number" id="p3-inputA" value="35" min="1" />
+                <label class="input-label" id="p3-labelA" for="p3-inputA">Value a</label>
+                <input class="input-field" type="number" id="p3-inputA" value="3" min="1" />
               </div>
               <div class="input-group">
-                <label class="input-label" for="p3-inputB">Value b</label>
-                <input class="input-field" type="number" id="p3-inputB" value="15" min="1" />
-              </div>
-              <div class="input-group">
-                <label class="input-label" for="p3-inputN">Modulus n</label>
-                <input class="input-field" type="number" id="p3-inputN" value="26" min="2" />
+                <label class="input-label" id="p3-labelB" for="p3-inputB">Modulus n</label>
+                <input class="input-field" type="number" id="p3-inputB" value="26" min="2" />
               </div>
             </div>
             <div class="presets-row">
               <span class="presets-label">Presets</span>
-              <button class="preset-btn" onclick="loadPreset(3,35,15,26)">35, 15</button>
-              <button class="preset-btn" onclick="loadPreset(3,17,13,20)">17, 13</button>
-              <button class="preset-btn" onclick="loadPreset(3,252,198,11)">252, 198</button>
-              <button class="preset-btn" onclick="loadPreset(3,89,55,144)"
+              <button class="preset-btn" onclick="loadPreset(3,35,64)">35, 64</button>
+              <button class="preset-btn" onclick="loadPreset(3,17,13)">17, 13</button>
+              <button class="preset-btn" onclick="loadPreset(3,252,198)">252, 198</button>
+              <button class="preset-btn" onclick="p3LoadAndPlay(144,89)"
                       title="Fibonacci — worst case (Lamé's theorem)">⚠ Fibonacci</button>
-              <button class="preset-btn" onclick="loadPreset(3,3,26,26)">RSA-style</button>
+              <button class="preset-btn" onclick="p3LoadRSA(3,26)"
+                      title="RSA: find private key d = e⁻¹ mod φ(n)">RSA-style</button>
             </div>
           </div>
         </div>
@@ -1613,7 +1709,7 @@
       } else if (part === 3) {
         document.getElementById('p3-inputA').value = args[0];
         document.getElementById('p3-inputB').value = args[1];
-        document.getElementById('p3-inputN').value = args[2];
+        if (window.p3ResetMode) window.p3ResetMode();
       }
     }
 
@@ -2090,6 +2186,14 @@
         isPlaying: false, speed: 1,
         status: 'idle', playTimer: null,
       };
+      let ovHideTimer = null;
+      let rsaMode = false;
+
+      function setMode(isRsa) {
+        rsaMode = isRsa;
+        document.getElementById('p3-labelA').textContent = isRsa ? 'e  (public exponent)' : 'Value a';
+        document.getElementById('p3-labelB').textContent = isRsa ? 'φ(n)  (totient)'       : 'Modulus n';
+      }
 
       // ── Core algorithm ────────────────────────────
       function computeData(a, b) {
@@ -2102,102 +2206,271 @@
         }
         const gcd = ca;
 
-        // Back-substitute: x, y per level (deepest → shallowest)
+        // Bézout coefficients (back-substitute)
         const backX = new Array(forward.length);
         const backY = new Array(forward.length);
-        let x1 = 1, y1 = 0;                       // base case returns (gcd, 1, 0)
+        let x1 = 1, y1 = 0;
         for (let i = forward.length - 1; i >= 0; i--) {
           backX[i] = y1;
           backY[i] = x1 - forward[i].q * y1;
           x1 = backX[i]; y1 = backY[i];
         }
-        return { forward, gcd, backX, backY };
+        const finalX = forward.length ? backX[0] : 1;
+        const finalY = forward.length ? backY[0] : 0;
+        return { forward, gcd, backX, backY, finalX, finalY };
+      }
+
+      // ── Back-sub display lines ────────────────────
+      // Returns { lines: string[], stepRanges: [{start,end}] }
+      // Each stepRange is a group of lines revealed together as one "step".
+      function computeBackSubDisplay(forward, gcd, origA, origB) {
+        const n = forward.length;
+        if (n === 0) return { lines: [], stepRanges: [] };
+
+        const pfx = ' '.repeat(String(gcd).length + 2) + '= ';
+
+        function getVal(vid) {
+          if (vid === -1) return origA;
+          if (vid === 0)  return origB;
+          return forward[vid - 1].r;
+        }
+        // forward[i].a valId: i=0→-1, i=1→0, i≥2→i-1
+        function vidA(i) { return i === 0 ? -1 : i - 1; }
+        // forward[i].b valId: always i
+        function vidB(i) { return i; }
+
+        // Special case: single division step (gcd = origB)
+        if (n === 1) {
+          return { lines: [`${gcd} = ${origB}`], stepRanges: [{ start: 0, end: 0 }] };
+        }
+
+        const gcdIdx = n - 2; // forward[gcdIdx].r === gcd
+        const lines = [];
+        const stepRanges = [];
+        const coeff = new Map();
+        const addC = (vid, c) => coeff.set(vid, (coeff.get(vid) || 0) + c);
+
+        addC(vidA(gcdIdx), 1);
+        addC(vidB(gcdIdx), -forward[gcdIdx].q);
+
+        function fmtEntries(ents) {
+          const pos = ents.filter(([, c]) => c > 0).sort(([a], [b]) => a - b);
+          const neg = ents.filter(([, c]) => c < 0).sort(([a], [b]) => a - b);
+          const parts = [];
+          for (const [vid, c] of [...pos, ...neg]) {
+            const absC = Math.abs(c);
+            const val  = getVal(vid);
+            const term = absC === 1 ? `${val}` : `${absC}·${val}`;
+            if (parts.length === 0) parts.push(c < 0 ? `−${term}` : term);
+            else parts.push(c < 0 ? ` − ${term}` : ` + ${term}`);
+          }
+          return parts.join('') || '0';
+        }
+        function fmtExpr() {
+          return fmtEntries([...coeff.entries()].filter(([, c]) => c !== 0));
+        }
+
+        // Initial rewrite line
+        lines.push(`${gcd} = ${fmtExpr()}`);
+        stepRanges.push({ start: 0, end: 0 });
+
+        // Substitute from k = gcdIdx-1 down to 0
+        for (let k = gcdIdx - 1; k >= 0; k--) {
+          const vid = k + 1; // valId of forward[k].r
+          const c   = coeff.get(vid) || 0;
+          if (c === 0) continue;
+
+          const stepStart = lines.length;
+          const vaId = vidA(k);
+          const vbId = vidB(k);
+          const q    = forward[k].q;
+
+          // Build expansion line (positive terms first, then negative)
+          const ents = [...coeff.entries()].filter(([, cv]) => cv !== 0);
+          const posE = ents.filter(([, cv]) => cv > 0).sort(([a], [b]) => a - b);
+          const negE = ents.filter(([, cv]) => cv < 0).sort(([a], [b]) => a - b);
+          const expParts = [];
+          for (const [evid, cv] of [...posE, ...negE]) {
+            const absCV = Math.abs(cv);
+            let termStr;
+            if (evid === vid) {
+              const inner = q === 1
+                ? `${getVal(vaId)} − ${getVal(vbId)}`
+                : `${getVal(vaId)} − ${q}·${getVal(vbId)}`;
+              termStr = absCV === 1 ? `(${inner})` : `${absCV}·(${inner})`;
+            } else {
+              const v = getVal(evid);
+              termStr = absCV === 1 ? `${v}` : `${absCV}·${v}`;
+            }
+            if (expParts.length === 0) expParts.push(cv < 0 ? `−${termStr}` : termStr);
+            else expParts.push(cv < 0 ? ` − ${termStr}` : ` + ${termStr}`);
+          }
+          lines.push(pfx + expParts.join(''));
+
+          // Update coefficients
+          coeff.delete(vid);
+          addC(vaId, c);
+          addC(vbId, -c * q);
+
+          // Simplified line
+          lines.push(pfx + fmtExpr());
+          stepRanges.push({ start: stepStart, end: lines.length - 1 });
+        }
+
+        return { lines, stepRanges };
       }
 
       // ── Build steps ───────────────────────────────
       function buildSteps() {
-        const a = parseInt(document.getElementById('p3-inputA').value) || 35;
-        const b = parseInt(document.getElementById('p3-inputB').value) || 15;
-        const n = parseInt(document.getElementById('p3-inputN').value) || 26;
-        if (a < 1 || b < 1) return;
+        const a = parseInt(document.getElementById('p3-inputA').value) || 3;
+        const b = parseInt(document.getElementById('p3-inputB').value) || 26;
+        if (a < 1 || b < 2) return;
 
-        const { forward, gcd, backX, backY } = computeData(a, b);
-        const finalX = forward.length ? backX[0] : 1;
-        const finalY = forward.length ? backY[0] : 0;
-        const inverse = gcd === 1 ? ((finalX % n + n) % n) : null;
+        const { forward, gcd, backX, backY, finalX, finalY } = computeData(a, b);
+        const inverse = gcd === 1 ? ((finalX % b + b) % b) : null;
+        const bsData  = computeBackSubDisplay(forward, gcd, a, b);
+
+        // Display names: use RSA terminology when in RSA mode
+        const dA = rsaMode ? 'e'    : `${a}`;
+        const dB = rsaMode ? 'φ(n)' : `${b}`;
 
         state.steps = [];
 
-        // Forward (divide) steps
+        // Step 0 — intro
+        state.steps.push({
+          phase: 'intro', a, b,
+          line: null,
+          explanation: rsaMode
+            ? `Computing <strong>gcd(e, φ(n)) = gcd(${a}, ${b})</strong> to find Bézout coefficients — needed to derive the <strong>private key d = e⁻¹ mod φ(n)</strong>.`
+            : `Computing <strong>gcd(${a}, ${b})</strong> and Bézout coefficients x, y such that ${a}·x + ${b}·y = gcd.`
+        });
+
+        // Forward / pivot steps
         forward.forEach((f, i) => {
+          const isPivot = f.r === 0;
           state.steps.push({
-            phase: 'forward', a: f.a, b: f.b, q: f.q, r: f.r,
-            gcd, x: backX[i], y: backY[i],
+            phase:   isPivot ? 'pivot' : 'forward',
+            a: f.a, b: f.b, q: f.q, r: f.r, gcd,
+            eq:   `${f.a} = ${f.q}·${f.b} + ${f.r}`,
             line: i === 0 ? 1 : 5,
-            explanation: `<strong>extGCD(${f.a}, ${f.b})</strong> — divide: `
-              + `${f.a} = <span class="mono">${f.q}</span> × ${f.b} `
-              + `+ <span class="mono">${f.r}</span>. Recurse with (${f.b}, ${f.r}).`
+            explanation: isPivot
+              ? `Remainder is <strong>0</strong> → gcd(${dA}, ${dB}) = <span class="mono">${gcd}</span>. Back-substitution will express gcd in terms of ${dA} and ${dB}.`
+              : i === 0
+                ? rsaMode
+                  ? `<strong>extGCD(e, φ(n)):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
+                  : `<strong>extGCD(${f.a}, ${f.b}):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
+                : `<strong>extGCD(${f.a}, ${f.b}):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
           });
         });
 
-        // Base case
-        state.steps.push({
-          phase: 'base', a: gcd, b: 0, q: null, r: null,
-          gcd, x: 1, y: 0, line: 2,
-          explanation: `<strong>Base case:</strong> b = 0 → gcd = <span class="mono">${gcd}</span>. `
-            + `Return (${gcd}, 1, 0). Back-substitution begins.`
+        // Back-sub steps
+        const gcdIdx2 = forward.length - 2; // index of the step whose r = gcd
+        bsData.stepRanges.forEach((range, i) => {
+          const isLast = i === bsData.stepRanges.length - 1;
+          const base   = { phase: 'backsub', a, b, gcd, currentRange: i,
+                           bsLines: bsData.lines, stepRanges: bsData.stepRanges };
+
+          if (i === 0) {
+            // ── Initial rewrite (single line, conceptual intro) ──
+            const fi = forward[gcdIdx2];
+            state.steps.push({ ...base, subStep: 'single', line: 6,
+              explanation: `We now work <strong>backwards</strong> to express `
+                + `gcd(${dA}, ${dB}) = ${gcd} as a linear combination <em>${dA}·x + ${dB}·y = ${gcd}</em>. `
+                + `From step ${gcdIdx2 + 1}: ${fi.a} = ${fi.q}·${fi.b} + ${gcd}, `
+                + `so we isolate <strong>${gcd} = ${fi.a} − ${fi.q}·${fi.b}</strong>.`
+            });
+          } else {
+            // ── Substitution rounds (expand + simplify sub-steps) ──
+            const k       = gcdIdx2 - i;          // which forward step we're substituting from
+            const fk      = forward[k];
+            const stepRef = k + 1;                // 1-indexed display number
+            const rem     = fk.r;
+            const substRhs = fk.q === 0
+              ? `${fk.a}`
+              : `${fk.a} − ${fk.q === 1 ? '' : fk.q + '·'}${fk.b}`;
+
+            // Expand sub-step
+            state.steps.push({ ...base, subStep: 'expand', line: 6,
+              explanation: `<strong>Step ${stepRef} told us</strong> ${fk.a} = ${fk.q}·${fk.b} + ${rem}, `
+                + `so <span class="mono">${rem} = ${substRhs}</span>. `
+                + `Substitute every occurrence of <span class="mono">${rem}</span> in the current expression `
+                + `with <span class="mono">(${substRhs})</span>.`
+            });
+
+            // Simplify sub-step
+            state.steps.push({ ...base, subStep: 'simplify', line: isLast ? 8 : 7,
+              explanation: isLast
+                ? `<strong>Final substitution complete.</strong> Collect like terms — `
+                  + `we've expressed gcd(${dA}, ${dB}) = ${gcd} entirely in terms of ${dA} and ${dB}: `
+                  + `<span class="mono">${dA}·(${finalX}) + ${dB}·(${finalY}) = ${gcd}</span>. `
+                  + (rsaMode
+                      ? `These are the Bézout coefficients — <strong>x = ${finalX}</strong> will become the private key d.`
+                      : `These are the Bézout coefficients used for modular inverses.`)
+                : `Collect like terms — group all multiples of <span class="mono">${dA}</span> `
+                  + `and <span class="mono">${dB}</span> separately. `
+                  + `This simplifies the expression one step closer to the original inputs.`
+            });
+          }
         });
 
-        // Back-sub steps (deepest → shallowest)
-        for (let i = forward.length - 1; i >= 0; i--) {
-          const f = forward[i];
-          const px = i < forward.length - 1 ? backX[i + 1] : 1;   // x₁ received from deeper call
-          const py = i < forward.length - 1 ? backY[i + 1] : 0;   // y₁ received from deeper call
+        // Result step
+        state.steps.push({
+          phase: 'result', a, b, gcd, x: finalX, y: finalY, inverse, line: 8,
+          explanation: rsaMode
+            ? `<strong>Bézout's Identity:</strong> e·${finalX} + φ(n)·${finalY} = ${gcd}.`
+              + (gcd === 1
+                ? ` Since gcd(e, φ(n)) = 1, the private key d exists. Press <strong>Continue</strong> to compute d = e⁻¹ mod φ(n).`
+                : ` Since gcd(e, φ(n)) ≠ 1, no private key exists — choose a different e.`)
+            : `<strong>Bézout's Identity:</strong> ${a}·${finalX} + ${b}·${finalY} = ${gcd}.`
+              + (gcd === 1
+                ? ` Since gcd = 1, a modular inverse exists. Press <strong>Continue</strong> to compute ${a}⁻¹ mod ${b}.`
+                : ` Since gcd ≠ 1, no modular inverse exists for these values.`)
+        });
+        // Modular inverse step (only when gcd = 1)
+        if (gcd === 1) {
+          const fmtX = finalX < 0 ? `(${finalX})` : `${finalX}`;
+          const fmtY = finalY < 0 ? `(${finalY})` : `${finalY}`;
+          const invLine = rsaMode
+            ? `d  =  e⁻¹ mod φ(n)  =  ${fmtX} mod ${b}  =  ${inverse}`
+            : `${a}⁻¹ mod ${b}  =  ${fmtX} mod ${b}  =  ${inverse}`;
+          const invExplanation = rsaMode
+            ? `<strong>Private Key d:</strong><br>`
+              + `From Bézout: <span class="mono">e·${fmtX} + φ(n)·${fmtY} = 1</span>  →  <span class="mono">${a}·${fmtX} + ${b}·${fmtY} = 1</span><br>`
+              + `Taking both sides mod φ(n): <span class="mono">e·${fmtX} ≡ 1 (mod φ(n))</span><br>`
+              + `Therefore <span class="mono">d = e⁻¹ mod φ(n) = ${fmtX} mod ${b} = <strong>${inverse}</strong></span><br>`
+              + `In RSA: d is the <strong>private key</strong> — the decryption exponent.`
+            : `<strong>Modular Inverse:</strong><br>`
+              + `From Bézout: <span class="mono">${a}·${fmtX} + ${b}·${fmtY} = 1</span><br>`
+              + `Taking both sides mod ${b}: <span class="mono">${a}·${fmtX} ≡ 1 (mod ${b})</span><br>`
+              + `Therefore <span class="mono">${a}⁻¹ mod ${b} = ${fmtX} mod ${b} = <strong>${inverse}</strong></span>`;
           state.steps.push({
-            phase: 'backsub', a: f.a, b: f.b, q: f.q, r: f.r,
-            gcd, x: backX[i], y: backY[i], line: 6,
-            explanation: `<strong>Back-sub at (${f.a}, ${f.b}):</strong> `
-              + `x = y₁ = <span class="mono">${backX[i]}</span>, `
-              + `y = x₁ − q·y₁ = ${px} − ${f.q}·${py} = <span class="mono">${backY[i]}</span>`
+            phase: 'mod-inverse', a, b, x: finalX, y: finalY, inverse, line: 10,
+            invLine, explanation: invExplanation
           });
         }
-
-        // Result
-        state.steps.push({
-          phase: 'result', a, b, gcd, x: finalX, y: finalY, inverse, n, line: 8,
-          explanation: `<strong>Result:</strong> gcd(${a}, ${b}) = <span class="mono">${gcd}</span>. `
-            + `Bézout: ${a}·${finalX} + ${b}·${finalY} = ${gcd}. `
-            + (inverse !== null
-              ? `Modular inverse: ${a}⁻¹ mod ${n} = <span class="mono">${inverse}</span>.`
-              : 'No modular inverse (gcd ≠ 1).')
-        });
 
         // Stats
         document.getElementById('p3-statDivisions').textContent = forward.length;
         document.getElementById('p3-statGCD').textContent       = gcd;
         document.getElementById('p3-statInverse').textContent   = inverse !== null ? inverse : 'N/A';
 
-        // History table (forward steps + base case, with pre-computed x, y)
+        // History table
         const tbody = document.getElementById('p3-historyBody');
         tbody.innerHTML = '';
         forward.forEach((f, i) => {
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${i+1}</td><td>${f.a}</td><td>${f.b}</td>`
             + `<td>${f.q}</td><td>${f.r}</td><td>${backX[i]}</td><td>${backY[i]}</td>`;
-          tr.addEventListener('click', () => renderStep(i));
+          tr.addEventListener('click', () => renderStep(i + 1)); // +1 for intro
           tbody.appendChild(tr);
         });
         const baseRow = document.createElement('tr');
         baseRow.innerHTML = `<td>${forward.length+1}</td><td>${gcd}</td><td>0</td>`
           + `<td>—</td><td>—</td><td>1</td><td>0</td>`;
-        baseRow.addEventListener('click', () => renderStep(forward.length));
+        baseRow.addEventListener('click', () => renderStep(forward.length)); // pivot
         tbody.appendChild(baseRow);
 
-        // Show canvas
         document.getElementById('p3-vizIdleHint').style.display = 'none';
-        document.getElementById('p3-vizSvg').style.display = '';
-
-        // Buttons
         document.getElementById('p3-btnStep').disabled  = false;
         document.getElementById('p3-btnPlay').disabled  = false;
         document.getElementById('p3-btnPause').disabled = true;
@@ -2208,129 +2481,274 @@
         renderStep(0);
       }
 
-      // ── SVG visualization ─────────────────────────
-      function drawSVG(idx) {
-        const svg = document.getElementById('p3-vizSvg');
-        const W = svg.clientWidth  || 800;
-        const H = svg.clientHeight || 500;
-        svg.innerHTML = '';
-        if (!state.steps.length) return;
+      // ── Unified chain (forward + back-sub + mod-inverse) ────────
+      function drawChain(stepIdx) {
+        const bc      = document.getElementById('p3-backChain');
+        bc.innerHTML  = '';
+        const curStep = state.steps[stepIdx];
+        const inBS    = curStep.phase === 'backsub';
+        const inMI    = curStep.phase === 'mod-inverse';
 
-        // Resolve CSS tokens (SVG attrs don't support CSS vars)
-        const cs = document.documentElement;
-        const g  = k => getComputedStyle(cs).getPropertyValue(k).trim();
-        const accent      = g('--accent');
-        const accentDim   = g('--accent-dim');
-        const bgSurface   = g('--bg-surface');
-        const bgElevated  = g('--bg-elevated');
-        const textSec     = g('--text-secondary');
-        const textMuted   = g('--text-muted');
-        const border      = g('--border');
+        // Euclidean Algorithm header (first item, no border-top)
+        const fwdHdr = document.createElement('div');
+        fwdHdr.className = 'p3-bc-header';
+        fwdHdr.style.cssText = 'border-top:none; margin-top:0; padding-top:0;';
+        fwdHdr.textContent = rsaMode ? 'Euclidean Algorithm  (e, φ(n))' : 'Euclidean Algorithm';
+        bc.appendChild(fwdHdr);
 
-        const n       = state.steps.length;
-        const cardW   = Math.min(580, W - 80);
-        const cardH   = Math.min(50, Math.max(32, Math.floor((H - 60) / n) - 10));
-        const gap     = Math.min(14, Math.max(4, Math.floor((H - 60 - n * cardH) / n)));
-        const totalH  = n * (cardH + gap) - gap;
-        const startY  = Math.max(16, (H - totalH) / 2);
-        const cx      = W / 2;
+        // Forward / pivot lines
+        for (let i = 0; i < state.steps.length; i++) {
+          const s = state.steps[i];
+          if (s.phase !== 'forward' && s.phase !== 'pivot') continue;
+          if (!inBS && !inMI && i > stepIdx) break;
 
-        function el(tag, attrs, text) {
-          const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
-          for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-          if (text !== undefined) e.textContent = text;
-          return e;
+          const isCur = !inBS && !inMI && i === stepIdx;
+          const div   = document.createElement('div');
+          div.className = 'p3-bc-line' + (isCur ? ' cur' : ' seen');
+          div.textContent = s.eq;
+          bc.appendChild(div);
         }
 
-        const PHASE_TAG = { forward: 'CALL', base: 'BASE', backsub: 'BACK', result: 'DONE' };
-        const PHASE_CLR = { base: '#4CAF50', backsub: '#90CAF9' };
+        // GCD result summary + Back-sub section
+        if (inBS || inMI) {
+          const srcA   = curStep.a;
+          const srcB   = curStep.b;
+          const srcGcd = inMI ? 1 : curStep.gcd;
+          const dispA  = rsaMode ? 'e'    : `${srcA}`;
+          const dispB  = rsaMode ? 'φ(n)' : `${srcB}`;
 
-        state.steps.forEach((s, i) => {
-          const y      = startY + i * (cardH + gap);
-          const x      = cx - cardW / 2;
-          const isCur  = i === idx;
-          const isPast = i < idx;
+          // GCD result summary
+          const gcdHdr = document.createElement('div');
+          gcdHdr.className   = 'p3-bc-header';
+          gcdHdr.textContent = 'GCD Result';
+          bc.appendChild(gcdHdr);
+          const gcdLine = document.createElement('div');
+          gcdLine.className   = 'p3-bc-line seen';
+          gcdLine.textContent = rsaMode
+            ? `gcd(e, φ(n))  =  gcd(${srcA}, ${srcB})  =  ${srcGcd}`
+            : `gcd(${srcA}, ${srcB}) = ${srcGcd}`;
+          bc.appendChild(gcdLine);
 
-          // Card
-          svg.appendChild(el('rect', {
-            x, y, width: cardW, height: cardH, rx: 8,
-            fill:   isCur ? accentDim : isPast ? bgSurface : bgElevated,
-            stroke: isCur ? accent    : border,
-            'stroke-width': isCur ? 2 : 1
-          }));
+          // Back-Substitution header
+          const hdr = document.createElement('div');
+          hdr.className   = 'p3-bc-header';
+          hdr.textContent = 'Back-Substitution';
+          bc.appendChild(hdr);
 
-          // Left stripe on current
-          if (isCur) svg.appendChild(el('rect', {
-            x, y: y + 4, width: 3, height: cardH - 8, rx: 2,
-            fill: accent
-          }));
-
-          // Equation label
-          const eq =
-            s.phase === 'forward' ? `extGCD(${s.a}, ${s.b})  →  ${s.a} = ${s.q}·${s.b} + ${s.r}` :
-            s.phase === 'base'    ? `extGCD(${s.a}, 0)  →  gcd = ${s.a}, return (${s.gcd}, 1, 0)` :
-            s.phase === 'backsub' ? `return (${s.gcd}, ${s.x}, ${s.y})  at level (${s.a}, ${s.b})` :
-            `gcd = ${s.gcd},  x = ${s.x},  y = ${s.y}${s.inverse !== null ? `,  inv = ${s.inverse}` : ''}`;
-
-          const fs = Math.min(13, Math.max(9, cardH * 0.26));
-          svg.appendChild(el('text', {
-            x: x + 14, y: y + cardH / 2 + 1,
-            'font-family': "\"SF Mono\", \"Fira Code\", monospace",
-            'font-size': fs,
-            fill: isCur ? accent : isPast ? textSec : textMuted,
-            'dominant-baseline': 'middle'
-          }, eq));
-
-          // Phase tag
-          const tagClr = isCur ? accent : (PHASE_CLR[s.phase] || textMuted);
-          svg.appendChild(el('text', {
-            x: x + cardW - 12, y: y + cardH / 2 + 1,
-            'font-family': 'sans-serif',
-            'font-size': 9, 'font-weight': 700,
-            fill: tagClr, 'text-anchor': 'end', 'dominant-baseline': 'middle'
-          }, PHASE_TAG[s.phase] || ''));
-
-          // Connector arrow to next card
-          if (i < n - 1) {
-            const y1 = y + cardH + 1, y2 = y + cardH + gap - 1;
-            const ac = i < idx ? textSec : textMuted;
-            svg.appendChild(el('line', {
-              x1: cx, y1, x2: cx, y2: y2 - 5,
-              stroke: ac, 'stroke-width': 1, 'stroke-dasharray': '3,2'
-            }));
-            svg.appendChild(el('polygon', {
-              points: `${cx},${y2} ${cx-4},${y2-6} ${cx+4},${y2-6}`,
-              fill: ac
-            }));
+          const bsStep = state.steps.find(s => s.phase === 'backsub');
+          if (bsStep) {
+            const { bsLines, stepRanges } = bsStep;
+            if (inMI) {
+              const lastEnd = stepRanges[stepRanges.length - 1].end;
+              bsLines.forEach((line, li) => {
+                if (li > lastEnd) return;
+                const div = document.createElement('div');
+                div.className   = 'p3-bc-line seen';
+                div.textContent = line;
+                bc.appendChild(div);
+              });
+            } else {
+              const { currentRange, subStep } = curStep;
+              const range = stepRanges[currentRange];
+              let maxLine, curStart, curEnd;
+              if (subStep === 'single' || subStep === 'expand') {
+                // Only show the first line of this range, highlighted
+                maxLine = curStart = curEnd = range.start;
+              } else {
+                // 'simplify': show both lines, only the simplified line is cur
+                maxLine  = range.end;
+                curStart = curEnd = range.end;
+              }
+              bsLines.forEach((line, li) => {
+                if (li > maxLine) return;
+                const div = document.createElement('div');
+                div.className = 'p3-bc-line' + (li >= curStart && li <= curEnd ? ' cur' : ' seen');
+                div.textContent = line;
+                bc.appendChild(div);
+              });
+            }
           }
-        });
+        }
+
+        // Bézout summary + Modular inverse section
+        if (inMI) {
+          const { a, b, x, y } = curStep;
+
+          // Bézout identity summary
+          const bezHdr = document.createElement('div');
+          bezHdr.className   = 'p3-bc-header';
+          bezHdr.textContent = 'Bézout Identity';
+          bc.appendChild(bezHdr);
+
+          const fmtC = v => v < 0 ? `(${v})` : `${v}`;
+          const bezLines = rsaMode
+            ? [
+                `e·${fmtC(x)} + φ(n)·${fmtC(y)} = 1`,
+                `d = ${x}   →   private key  (keep)`,
+                `y = ${y}   →   coefficient of φ(n)  (discard)`
+              ]
+            : [
+                `${a}·${fmtC(x)} + ${b}·${fmtC(y)} = 1`,
+                `x = ${x}   →   coefficient of ${a}`,
+                `y = ${y}   →   coefficient of ${b}`
+              ];
+          bezLines.forEach(text => {
+            const d = document.createElement('div');
+            d.className   = 'p3-bc-line seen';
+            d.textContent = text;
+            bc.appendChild(d);
+          });
+
+          // Modular Inverse header + answer
+          const hdr2 = document.createElement('div');
+          hdr2.className   = 'p3-bc-header';
+          hdr2.textContent = rsaMode ? 'RSA Private Key' : 'Modular Inverse';
+          bc.appendChild(hdr2);
+          const div = document.createElement('div');
+          div.className   = 'p3-bc-line cur';
+          div.textContent = curStep.invLine;
+          bc.appendChild(div);
+        }
+
+        bc.scrollTop = bc.scrollHeight;
+      }
+
+      // ── Overlay helpers ───────────────────────────
+      function showOv(html) {
+        clearTimeout(ovHideTimer);
+        const ov = document.getElementById('p3-overlay');
+        ov.innerHTML = `<div class="p3-ov__body">${html}</div>`;
+        ov.style.display = 'flex';
+        ov.offsetHeight; // force reflow for animation
+        ov.classList.add('visible');
+      }
+      function hideOv() {
+        const ov = document.getElementById('p3-overlay');
+        ov.classList.remove('visible');
+        ovHideTimer = setTimeout(() => {
+          if (!ov.classList.contains('visible')) {
+            ov.style.display = 'none';
+            ov.innerHTML = '';
+          }
+        }, 450);
       }
 
       // ── Render step ───────────────────────────────
       function renderStep(i) {
         if (i < 0 || i >= state.steps.length) return;
         state.currentStep = i;
-        const s = state.steps[i];
+        const s      = state.steps[i];
+        const svg    = document.getElementById('p3-vizSvg');
+        const bc     = document.getElementById('p3-backChain');
+        const contBn = document.getElementById('p3-continueBtn');
+
+        // Phase dispatch
+        if (s.phase === 'intro') {
+          hideOv();
+          svg.style.display    = 'none';
+          bc.style.display     = 'none';
+          contBn.style.display = 'none';
+          showOv(rsaMode ? `
+            <div class="p3-ov__label">RSA Key Generation</div>
+            <div class="p3-ov__eq-xl">gcd(e, φ(n))</div>
+            <div class="p3-ov__eq-md" style="opacity:0.6">= gcd(${s.a}, ${s.b})</div>
+            <div class="p3-ov__sep"></div>
+            <div class="p3-ov__label">Find  d = e⁻¹ mod φ(n)</div>
+            <div class="p3-ov__label" style="margin-top:4px;">Press Step or Play to begin</div>
+          ` : `
+            <div class="p3-ov__label">Extended Euclidean Algorithm</div>
+            <div class="p3-ov__eq-xl">gcd(${s.a}, ${s.b})</div>
+            <div class="p3-ov__sep"></div>
+            <div class="p3-ov__label">Press Step or Play to begin</div>
+          `);
+
+        } else if (s.phase === 'forward') {
+          hideOv();
+          svg.style.display    = 'none';
+          bc.style.display     = '';
+          contBn.style.display = 'none';
+          drawChain(i);
+
+        } else if (s.phase === 'pivot') {
+          svg.style.display    = 'none';
+          bc.style.display     = '';
+          contBn.style.display = 'none';
+          drawChain(i);
+          showOv(rsaMode ? `
+            <div class="p3-ov__label">Remainder = 0</div>
+            <div class="p3-ov__eq-lg">${s.a} = ${s.q}·${s.b} + 0</div>
+            <div class="p3-ov__sep"></div>
+            <div class="p3-ov__gcd">gcd(e, φ(n)) = ${s.gcd}</div>
+            <div class="p3-ov__label" style="margin-top:4px;">Back-substitution begins →</div>
+          ` : `
+            <div class="p3-ov__label">Remainder = 0</div>
+            <div class="p3-ov__eq-lg">${s.a} = ${s.q}·${s.b} + 0</div>
+            <div class="p3-ov__sep"></div>
+            <div class="p3-ov__gcd">gcd = ${s.gcd}</div>
+            <div class="p3-ov__label" style="margin-top:4px;">Back-substitution begins →</div>
+          `);
+
+        } else if (s.phase === 'backsub') {
+          hideOv();
+          svg.style.display    = 'none';
+          bc.style.display     = '';
+          contBn.style.display = 'none';
+          drawChain(i);
+
+        } else if (s.phase === 'result') {
+          svg.style.display = 'none';
+          bc.style.display  = 'none';
+          document.getElementById('p3-continueBtn').style.display = s.inverse !== null ? '' : 'none';
+          showOv(rsaMode ? `
+            <div class="p3-ov__label">RSA Result</div>
+            <div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.5rem)">gcd(e, φ(n)) = ${s.gcd}</div>
+            <div class="p3-ov__eq-md">d = ${s.x}   <span style="opacity:0.5">(private key coefficient)</span></div>
+            <div class="p3-ov__eq-md">y = ${s.y}   <span style="opacity:0.5">(discarded)</span></div>
+            <div class="p3-ov__sep"></div>
+            <div class="p3-ov__eq-md">e·${s.x < 0 ? `(${s.x})` : s.x} + φ(n)·${s.y < 0 ? `(${s.y})` : s.y} = ${s.gcd}</div>
+          ` : `
+            <div class="p3-ov__label">Result</div>
+            <div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.5rem)">gcd(${s.a}, ${s.b}) = ${s.gcd}</div>
+            <div class="p3-ov__eq-md">x = ${s.x}</div>
+            <div class="p3-ov__eq-md">y = ${s.y}</div>
+            <div class="p3-ov__sep"></div>
+            <div class="p3-ov__eq-md">${fmtBezout(s.a, s.x, s.b, s.y, s.gcd)}</div>
+          `);
+        } else if (s.phase === 'mod-inverse') {
+          svg.style.display = 'none';
+          bc.style.display  = '';
+          document.getElementById('p3-continueBtn').style.display = 'none';
+          hideOv();
+          drawChain(i);
+        }
 
         // Pseudocode highlight
         for (let ln = 1; ln <= 10; ln++)
-          document.getElementById(`p3-pline-${ln}`).classList.remove('active');
-        document.getElementById(`p3-pline-${s.line}`).classList.add('active');
-        if (s.phase === 'backsub')
-          document.getElementById('p3-pline-7').classList.add('active');
+          document.getElementById(`p3-pline-${ln}`)?.classList.remove('active');
+        if (s.line) {
+          document.getElementById(`p3-pline-${s.line}`)?.classList.add('active');
+          if (s.phase === 'backsub' && s.line !== 8)
+            document.getElementById('p3-pline-7')?.classList.add('active');
+        }
 
         // Explanation
-        document.getElementById('p3-explanationBox').innerHTML = s.explanation;
+        if (s.explanation)
+          document.getElementById('p3-explanationBox').innerHTML = s.explanation;
 
-        // Counter
+        // Step counter
         document.getElementById('p3-stepCounter').textContent = `${i + 1} / ${state.steps.length}`;
 
-        // History row highlight (only forward + base rows in table)
-        const rows = document.querySelectorAll('#p3-historyBody tr');
-        rows.forEach((tr, ri) => tr.classList.toggle('current', ri === i));
+        // History row highlight (table row ri = step i-1)
+        document.querySelectorAll('#p3-historyBody tr')
+          .forEach((tr, ri) => tr.classList.toggle('current', ri === i - 1));
+      }
 
-        // SVG
-        drawSVG(i);
+      // ── Bézout display helper ─────────────────────
+      function fmtBezout(a, x, b, y, gcd) {
+        const terms = [];
+        if (x !== 0) terms.push(`${a}·${x < 0 ? '(' + x + ')' : x}`);
+        if (y !== 0) terms.push(`${b}·${y < 0 ? '(' + y + ')' : y}`);
+        return (terms.length ? terms.join(' + ') : '0') + ' = ' + gcd;
       }
 
       // ── Status badge ──────────────────────────────
@@ -2357,6 +2775,11 @@
             pause(); updateStatus('done'); return;
           }
           renderStep(++state.currentStep);
+          // Auto-pause at pivot and result so overlays are readable
+          const ph = state.steps[state.currentStep].phase;
+          if (ph === 'pivot' || ph === 'result') {
+            pause(); updateStatus('paused'); return;
+          }
           state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
         }
         state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
@@ -2384,22 +2807,34 @@
 
       function reset() {
         clearTimeout(state.playTimer);
+        clearTimeout(ovHideTimer);
         Object.assign(state, { steps:[], currentStep:-1, isPlaying:false, status:'idle', playTimer:null });
+
+        const ov = document.getElementById('p3-overlay');
+        ov.classList.remove('visible');
+        ov.style.display = 'none';
+        ov.innerHTML = '';
+
+        document.getElementById('p3-vizSvg').style.display = 'none';
+        document.getElementById('p3-vizSvg').innerHTML     = '';
+        document.getElementById('p3-backChain').style.display = 'none';
+        document.getElementById('p3-backChain').innerHTML  = '';
+        document.getElementById('p3-continueBtn').style.display = 'none';
         document.getElementById('p3-vizIdleHint').style.display = '';
-        document.getElementById('p3-vizSvg').style.display  = 'none';
-        document.getElementById('p3-vizSvg').innerHTML      = '';
+
         document.getElementById('p3-explanationBox').innerHTML =
           'Enter values in <strong>Input &amp; Presets</strong> below, '
           + 'then press <strong>Build</strong> in the controls above to start.';
-        document.getElementById('p3-stepCounter').textContent     = '— / —';
-        document.getElementById('p3-statDivisions').textContent   = '—';
-        document.getElementById('p3-statGCD').textContent         = '—';
-        document.getElementById('p3-statInverse').textContent     = '—';
+        document.getElementById('p3-stepCounter').textContent   = '— / —';
+        document.getElementById('p3-statDivisions').textContent = '—';
+        document.getElementById('p3-statGCD').textContent       = '—';
+        document.getElementById('p3-statInverse').textContent   = '—';
         document.getElementById('p3-historyBody').innerHTML =
           '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);'
           + 'font-family:var(--font-ui);">No steps yet</td></tr>';
         for (let ln = 1; ln <= 10; ln++)
-          document.getElementById(`p3-pline-${ln}`).classList.remove('active');
+          document.getElementById(`p3-pline-${ln}`)?.classList.remove('active');
+        setMode(false);
         updateStatus('idle');
         ['p3-btnStep','p3-btnPlay','p3-btnPause','p3-btnReset'].forEach(id =>
           document.getElementById(id).disabled = true
@@ -2418,9 +2853,30 @@
         document.getElementById('p3-btnPlay').addEventListener('click', play);
         document.getElementById('p3-btnPause').addEventListener('click', pause);
         document.getElementById('p3-btnReset').addEventListener('click', reset);
-        window.addEventListener('resize', () => {
-          if (state.steps.length) drawSVG(state.currentStep);
+        document.getElementById('p3-continueBtn').textContent = 'Continue → Modular Inverse';
+        document.getElementById('p3-continueBtn').addEventListener('click', () => {
+          renderStep(state.currentStep + 1);
+          updateStatus('done');
+          document.getElementById('p3-btnStep').disabled = true;
+          document.getElementById('p3-btnPlay').disabled = true;
         });
+        window.addEventListener('resize', () => {
+          // chain div is CSS-based, nothing to redraw on resize
+        });
+        window.p3Step = step;
+        window.p3LoadAndPlay = function(a, b) {
+          setMode(false);
+          document.getElementById('p3-inputA').value = a;
+          document.getElementById('p3-inputB').value = b;
+          buildSteps();
+          setTimeout(play, 300);
+        };
+        window.p3LoadRSA = function(e, phi) {
+          document.getElementById('p3-inputA').value = e;
+          document.getElementById('p3-inputB').value = phi;
+          setMode(true);
+        };
+        window.p3ResetMode = function() { setMode(false); };
       }
 
       return { init };
