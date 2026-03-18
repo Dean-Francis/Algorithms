@@ -757,6 +757,76 @@
     }
     .p3-continue-btn:hover { opacity: 0.85; transform: translateX(-50%) scale(1.03); }
 
+    /* ─── Part 2 — Parallel Merge Sort ──────────── */
+    .p2-viz-layout {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      padding: 72px 14px 88px 14px;
+      gap: 10px; box-sizing: border-box;
+    }
+    .p2-tree-wrap {
+      flex: 1 1 0; min-height: 0; position: relative;
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .p2-tree-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .p2-bottom-row {
+      flex: 0 0 190px; display: grid;
+      grid-template-columns: 3fr 2fr; gap: 10px;
+    }
+    .p2-gantt-wrap, .p2-brent-wrap {
+      background: var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .p2-subpanel-title {
+      font-size: var(--text-xs); font-weight: 600;
+      letter-spacing: 0.6px; text-transform: uppercase;
+      color: var(--text-muted); padding: 6px 12px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .p2-gantt-svg { flex: 1; width: 100%; display: block; min-height: 0; }
+    .p2-brent-body {
+      flex: 1; padding: 10px 14px;
+      display: flex; flex-direction: column; gap: 6px; overflow: hidden;
+    }
+    .p2-brent-row {
+      font-family: var(--font-mono); font-size: var(--text-sm);
+      color: var(--text-secondary); line-height: 1.5;
+      display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;
+    }
+    .p2-brent-val { color: var(--accent); font-weight: 700; }
+    .p2-brent-tp {
+      font-size: var(--text-xl); font-weight: 700;
+      color: var(--text-primary);
+      transition: color 250ms var(--ease);
+    }
+    .p2-brent-tp.flash { color: var(--accent); }
+    .p2-proc-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+    .p2-proc-label {
+      font-size: var(--text-xs); color: var(--text-muted);
+      font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; white-space: nowrap;
+    }
+    .p2-proc-slider {
+      -webkit-appearance: none; appearance: none;
+      flex: 1; height: 3px;
+      background: var(--glass-border);
+      border-radius: var(--radius-pill); outline: none; cursor: pointer;
+    }
+    .p2-proc-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--accent); cursor: pointer;
+      transition: transform var(--dur-fast) var(--ease-spring);
+    }
+    .p2-proc-slider::-webkit-slider-thumb:hover { transform: scale(1.3); }
+    .p2-proc-val {
+      font-family: var(--font-mono); font-size: var(--text-xs);
+      color: var(--accent); min-width: 22px; text-align: right;
+    }
+
   </style>
 </head>
 <body>
@@ -1087,7 +1157,40 @@
           <div class="viz-idle-hint__icon">⇅</div>
           <div class="viz-idle-hint__text">Press Build to begin</div>
         </div>
-        <svg id="p2-vizSvg" xmlns="http://www.w3.org/2000/svg" style="display:none;"></svg>
+        <div id="p2-mainViz" class="p2-viz-layout" style="display:none;">
+          <!-- Recursion tree -->
+          <div class="p2-tree-wrap" id="p2-treeWrap">
+            <svg id="p2-treeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+          </div>
+          <!-- Gantt + Brent row -->
+          <div class="p2-bottom-row">
+            <div class="p2-gantt-wrap">
+              <div class="p2-subpanel-title">Processor Gantt Chart</div>
+              <svg id="p2-ganttSvg" class="p2-gantt-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+            </div>
+            <div class="p2-brent-wrap">
+              <div class="p2-subpanel-title">Brent's Theorem &nbsp; T<tspan style="font-size:0.7em;baseline-shift:sub">p</tspan> ≤ W/p + D</div>
+              <div class="p2-brent-body" id="p2-brentBody">
+                <div class="p2-brent-row">
+                  W&nbsp;=&nbsp;<span class="p2-brent-val" id="p2-bW">—</span>
+                  &nbsp;&nbsp;D&nbsp;=&nbsp;<span class="p2-brent-val" id="p2-bD">—</span>
+                </div>
+                <div class="p2-proc-row">
+                  <span class="p2-proc-label">p</span>
+                  <input type="range" class="p2-proc-slider" id="p2-procSlider"
+                         min="1" max="16" step="1" value="4" />
+                  <span class="p2-proc-val" id="p2-procVal">4</span>
+                </div>
+                <div class="p2-brent-row">
+                  T<sub>p</sub>&nbsp;≤&nbsp;<span class="p2-brent-tp" id="p2-bTp">—</span>
+                </div>
+                <div class="p2-brent-row" style="font-size:var(--text-xs);color:var(--text-muted);">
+                  Parallelism&nbsp;=&nbsp;W/D&nbsp;=&nbsp;<span class="p2-brent-val" id="p2-bPar">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Floating pill controls -->
@@ -1225,20 +1328,28 @@
         </div>
         <div class="collapsible-body">
           <div class="collapsible-inner">
-            <div class="input-grid input-grid--1col">
+            <div class="input-grid input-grid--2col">
               <div class="input-group">
                 <label class="input-label" for="p2-inputArray">Array (comma-separated)</label>
                 <input class="input-field" type="text" id="p2-inputArray"
                        value="38,27,43,3,9,82,10" placeholder="e.g. 38,27,43,3,9,82,10" />
               </div>
+              <div class="input-group">
+                <label class="input-label" for="p2-procSliderInput">Processors (p)</label>
+                <div style="display:flex;align-items:center;gap:10px;padding-top:4px;">
+                  <input type="range" class="p2-proc-slider" id="p2-procSliderInput"
+                         min="1" max="16" step="1" value="4"
+                         style="flex:1;" />
+                  <span class="p2-proc-val" id="p2-procValInput"
+                        style="font-size:var(--text-base);">4</span>
+                </div>
+              </div>
             </div>
             <div class="presets-row">
               <span class="presets-label">Presets</span>
-              <button class="preset-btn" onclick="loadPreset(2,'38,27,43,3,9,82,10,15')">Random 8</button>
-              <button class="preset-btn" onclick="loadPreset(2,'80,70,60,50,40,30,20,10')">Reverse 8</button>
-              <button class="preset-btn" onclick="loadPreset(2,'1,2,3,5,4,6,7,8')">Nearly sorted</button>
-              <button class="preset-btn" onclick="loadPreset(2,'1,1,2,3,5,8,13,21')"
-                      title="Fibonacci sequence">Fibonacci seq</button>
+              <button class="preset-btn" onclick="loadPreset(2,'38,27,43,3,9,82,10')">7-Element</button>
+              <button class="preset-btn" onclick="loadPreset(2,'5,2,8,1,9,3,7,4')">8-Element (perfect)</button>
+              <button class="preset-btn" onclick="loadPreset(2,'15,3,17,10,84,19,6,22,14,7,31,2,28,11,5')">15-Element (deep)</button>
             </div>
           </div>
         </div>
@@ -1258,15 +1369,15 @@
             <div class="stats-grid">
               <div class="stat-card">
                 <span class="stat-value" id="p2-statComparisons">—</span>
-                <span class="stat-label">Comparisons</span>
+                <span class="stat-label">Work W = O(n log n)</span>
               </div>
               <div class="stat-card">
                 <span class="stat-value" id="p2-statMergeOps">—</span>
-                <span class="stat-label">Merge Operations</span>
+                <span class="stat-label">Span D = O(log² n)</span>
               </div>
               <div class="stat-card">
                 <span class="stat-value" id="p2-statDepth">—</span>
-                <span class="stat-label">Parallel Depth</span>
+                <span class="stat-label">Parallelism W/D</span>
               </div>
             </div>
             <div class="history-wrapper">
@@ -2156,26 +2267,663 @@
     // ═══════════════════════════════════════════════
 
     const Part2 = (() => {
-      const state = { steps: [], currentStep: 0, isPlaying: false, speed: 1, status: 'idle' };
 
-      function buildSteps() { /* TODO */ }
-      function renderStep(i) { /* TODO */ }
-      function play()  { /* TODO */ }
-      function pause() { /* TODO */ }
-      function step()  { /* TODO */ }
-      function reset() { /* TODO */ }
+      const state = {
+        arr: [], p: 4, tree: null,
+        steps: [], currentStep: -1,
+        isPlaying: false, speed: 1,
+        status: 'idle', playTimer: null,
+        W: 0, D: 0,
+      };
 
+      // ── Parse input ─────────────────────────────
+      function parseInput() {
+        const raw = document.getElementById('p2-inputArray').value;
+        const arr = raw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+        if (arr.length < 2) throw new Error('Need at least 2 elements.');
+        if (arr.length > 20) throw new Error('Max 20 elements for visualization.');
+        return arr;
+      }
+
+      // ── Build recursion tree ─────────────────────
+      function buildTree(arr) {
+        const nodes = {};
+        let ctr = 0;
+        function make(lo, hi, depth, parentId) {
+          const id = 'n' + (ctr++);
+          nodes[id] = {
+            id, lo, hi, arr: arr.slice(lo, hi + 1),
+            depth, parentId, mid: null,
+            leftId: null, rightId: null,
+            isLeaf: lo >= hi,
+          };
+          if (lo < hi) {
+            const mid = Math.floor((lo + hi) / 2);
+            nodes[id].mid = mid;
+            nodes[id].leftId  = make(lo, mid, depth + 1, id);
+            nodes[id].rightId = make(mid + 1, hi, depth + 1, id);
+          }
+          return id;
+        }
+        const root = make(0, arr.length - 1, 0, null);
+        return { nodes, root };
+      }
+
+      // ── Layout: leaf-spacing → parent = midpoint ─
+      function layoutTree(nodes, root, svgW, svgH) {
+        const maxDepth = Math.max(...Object.values(nodes).map(n => n.depth));
+        const ROW_H  = Math.max(50, Math.min(85, (svgH - 30) / (maxDepth + 1)));
+        const NODE_H = 36;
+
+        function getLeaves(id) {
+          const n = nodes[id];
+          return n.isLeaf ? [id] : [...getLeaves(n.leftId), ...getLeaves(n.rightId)];
+        }
+        const leaves = getLeaves(root);
+        const leafSpacing = Math.max(42, (svgW - 40) / leaves.length);
+
+        const leafX = {};
+        leaves.forEach((id, i) => { leafX[id] = 20 + (i + 0.5) * leafSpacing; });
+
+        function assign(id) {
+          const n = nodes[id];
+          if (n.isLeaf) {
+            n.cx = leafX[id];
+          } else {
+            assign(n.leftId); assign(n.rightId);
+            n.cx = (nodes[n.leftId].cx + nodes[n.rightId].cx) / 2;
+          }
+          n.cy  = 15 + n.depth * ROW_H + NODE_H / 2;
+          const ew = Math.min(18, (leafSpacing * 0.85) / Math.max(n.arr.length, 1));
+          n.w   = Math.max(40, n.arr.length * ew + 12);
+          n.h   = NODE_H;
+          n._ew = ew;
+        }
+        assign(root);
+      }
+
+      // ── Generate animation steps ─────────────────
+      function generateSteps(treeData) {
+        const { nodes, root } = treeData;
+        const maxDepth = Math.max(...Object.values(nodes).map(n => n.depth));
+        const statuses = {}, arrays = {};
+        Object.keys(nodes).forEach(id => {
+          statuses[id] = 'idle';
+          arrays[id]   = [...nodes[id].arr];
+        });
+        let pt = 0; // parallel time
+        const steps = [];
+
+        function snap(extra) {
+          return {
+            nodeStatuses: { ...statuses },
+            arrays: Object.fromEntries(Object.entries(arrays).map(([k,v]) => [k,[...v]])),
+            parallelTime: pt, activeNodeIds: [], rankInfoArr: null, ganttOps: [],
+            ...extra,
+          };
+        }
+
+        // Step 0 — init
+        statuses[root] = 'active';
+        steps.push(snap({
+          phase: 'init', activeNodeIds: [root], pseudoLine: 1,
+          explanation: `Array [${nodes[root].arr.join(', ')}] loaded. <strong>ParMergeSort</strong> will recursively split into halves, sort each half in parallel (spawn/sync), then merge using binary-search ranking.`,
+        }));
+
+        // Split phase: depth by depth
+        for (let d = 0; d <= maxDepth; d++) {
+          pt++;
+          const atDepth  = Object.values(nodes).filter(n => n.depth === d);
+          const nonLeaves = atDepth.filter(n => !n.isLeaf);
+          const leavesHere = atDepth.filter(n => n.isLeaf);
+
+          leavesHere.forEach(n => { statuses[n.id] = 'sorted'; });
+
+          if (nonLeaves.length > 0) {
+            nonLeaves.forEach(n => {
+              statuses[n.id] = 'splitting';
+              if (n.leftId)  statuses[n.leftId]  = 'active';
+              if (n.rightId) statuses[n.rightId] = 'active';
+            });
+            const leafNote = leavesHere.length ? ` (${leavesHere.length} base case(s) also resolved)` : '';
+            steps.push(snap({
+              phase: 'split', activeNodeIds: nonLeaves.map(n => n.id),
+              pseudoLine: d === 0 ? 3 : 4,
+              explanation: `t=${pt}: <strong>${nonLeaves.length}</strong> subarray(s) split in parallel at depth&nbsp;${d}. Mid computed, left and right halves <b>spawned</b> concurrently.${leafNote}`,
+              ganttOps: nonLeaves.map(n => ({ nodeId: n.id, taskType: 'split' })),
+            }));
+          } else {
+            // all base cases
+            steps.push(snap({
+              phase: 'base', activeNodeIds: leavesHere.map(n => n.id),
+              pseudoLine: 2,
+              explanation: `t=${pt}: All ${leavesHere.length} subarrays reduced to single elements — trivially sorted. Recursion bottoms out; <b>sync</b> begins.`,
+              ganttOps: leavesHere.map(n => ({ nodeId: n.id, taskType: 'base' })),
+            }));
+            break;
+          }
+        }
+
+        // Merge phase: bottom-up by depth
+        for (let d = maxDepth - 1; d >= 0; d--) {
+          const mergeNodes = Object.values(nodes).filter(n => n.depth === d && !n.isLeaf);
+          if (!mergeNodes.length) continue;
+
+          // Ranking step
+          pt++;
+          mergeNodes.forEach(n => { statuses[n.id] = 'ranking'; });
+          const rankInfoArr = mergeNodes.map(n => {
+            const left  = [...arrays[n.leftId]];
+            const right = [...arrays[n.rightId]];
+            const ranks = left.map(el => {
+              let lo2 = 0, hi2 = right.length;
+              while (lo2 < hi2) {
+                const m = (lo2 + hi2) >> 1;
+                right[m] <= el ? (lo2 = m + 1) : (hi2 = m);
+              }
+              return lo2;
+            });
+            return { nodeId: n.id, left, right, ranks };
+          });
+          steps.push(snap({
+            phase: 'rank', activeNodeIds: mergeNodes.map(n => n.id),
+            rankInfoArr, pseudoLine: 8,
+            explanation: `t=${pt}: <strong>Parallel merge</strong> — ${mergeNodes.length} merge(s) at depth&nbsp;${d} in parallel. Each element binary-searches its rank in the other half. Costs <span class="mono">O(log n)</span> parallel time with <span class="mono">O(n)</span> processors.`,
+            ganttOps: mergeNodes.map(n => ({ nodeId: n.id, taskType: 'rank' })),
+          }));
+
+          // Merge result step
+          pt++;
+          mergeNodes.forEach(n => {
+            statuses[n.id] = 'merging';
+            const left = [...arrays[n.leftId]], right = [...arrays[n.rightId]];
+            const merged = [];
+            let i = 0, j = 0;
+            while (i < left.length && j < right.length)
+              merged.push(left[i] <= right[j] ? left[i++] : right[j++]);
+            while (i < left.length)  merged.push(left[i++]);
+            while (j < right.length) merged.push(right[j++]);
+            arrays[n.id] = merged;
+          });
+          mergeNodes.forEach(n => { statuses[n.id] = 'sorted'; });
+          steps.push(snap({
+            phase: 'merge', activeNodeIds: mergeNodes.map(n => n.id),
+            pseudoLine: 7,
+            explanation: `t=${pt}: Elements placed at rank&nbsp;+&nbsp;own-index positions. <strong>${mergeNodes.length}</strong> sorted subarray(s) produced in parallel. <b>sync</b> (join) completes for depth&nbsp;${d}.`,
+            ganttOps: mergeNodes.map(n => ({ nodeId: n.id, taskType: 'merge' })),
+          }));
+        }
+
+        // Done
+        statuses[root] = 'done';
+        steps.push(snap({
+          phase: 'done', activeNodeIds: [root], pseudoLine: 7,
+          explanation: `Sort complete! Sorted array: <span class="mono">[${arrays[root].join(', ')}]</span>. Total parallel time: <strong>${pt} units</strong>. Achieved <span class="mono">O(log²n)</span> depth with parallel binary-search merge.`,
+        }));
+
+        return steps;
+      }
+
+      // ── Work & Span ──────────────────────────────
+      function computeWD(n) {
+        const lg = Math.log2(Math.max(n, 2));
+        return {
+          W: Math.round(n * lg),
+          D: Math.round(lg * lg),
+        };
+      }
+
+      // ── SVG helper ───────────────────────────────
+      function $svg(tag, attrs) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        if (attrs) Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v));
+        return el;
+      }
+
+      // ── Draw recursion tree ───────────────────────
+      function drawTree(step) {
+        const svg = document.getElementById('p2-treeSvg');
+        const W   = svg.clientWidth  || svg.parentElement.clientWidth  || 600;
+        const H   = svg.clientHeight || svg.parentElement.clientHeight || 300;
+        svg.innerHTML = '';
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+        const { nodes, root } = state.tree;
+        layoutTree(nodes, root, W, H);
+
+        const { nodeStatuses, arrays, phase, rankInfoArr } = step;
+
+        const C = {
+          idle:     { fill: 'var(--bg-surface)',          stroke: 'var(--border)',  text: 'var(--text-muted)' },
+          active:   { fill: 'var(--bg-elevated)',         stroke: 'var(--accent)',  text: 'var(--text-primary)' },
+          splitting:{ fill: 'var(--accent-dim)',          stroke: 'var(--accent)',  text: 'var(--accent)' },
+          ranking:  { fill: 'rgba(255,193,7,0.13)',       stroke: '#FFC107',        text: '#FFC107' },
+          merging:  { fill: 'rgba(232,68,10,0.18)',       stroke: 'var(--accent)',  text: 'var(--accent)' },
+          sorted:   { fill: 'rgba(76,175,80,0.12)',       stroke: '#4CAF50',        text: '#4CAF50' },
+          done:     { fill: 'rgba(76,175,80,0.22)',       stroke: '#4CAF50',        text: '#4CAF50' },
+        };
+
+        // Edges
+        Object.values(nodes).forEach(n => {
+          if (n.isLeaf) return;
+          [n.leftId, n.rightId].forEach(cid => {
+            const ch = nodes[cid];
+            const x1 = n.cx,  y1 = n.cy + n.h / 2;
+            const x2 = ch.cx, y2 = ch.cy - ch.h / 2;
+            const mid = (y1 + y2) / 2;
+            const active = ['splitting','ranking','merging','sorted','done']
+              .includes(nodeStatuses[n.id]);
+            svg.appendChild($svg('path', {
+              d: `M ${x1} ${y1} C ${x1} ${mid} ${x2} ${mid} ${x2} ${y2}`,
+              fill: 'none',
+              stroke: active ? 'rgba(232,68,10,0.35)' : 'var(--border)',
+              'stroke-width': active ? 2 : 1.5,
+              'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+            }));
+          });
+        });
+
+        // Ranking arcs (inline in merge phase)
+        if (phase === 'rank' && rankInfoArr) {
+          rankInfoArr.forEach(info => {
+            const n = nodes[info.nodeId];
+            if (!n || !n.leftId || !n.rightId) return;
+            const L = nodes[n.leftId], R = nodes[n.rightId];
+            const x1 = L.cx + L.w / 2 + 2, y1 = L.cy;
+            const x2 = R.cx - R.w / 2 - 2, y2 = R.cy;
+            const cpY = Math.min(y1, y2) - 18;
+            svg.appendChild($svg('path', {
+              d: `M ${x1} ${y1} Q ${(x1+x2)/2} ${cpY} ${x2} ${y2}`,
+              fill: 'none', stroke: '#FFC107', 'stroke-width': 1.5,
+              'stroke-dasharray': '5 3', 'stroke-linecap': 'round', opacity: '0.75',
+            }));
+            const lbl = $svg('text', {
+              x: (x1+x2)/2, y: cpY - 4,
+              'text-anchor': 'middle', fill: '#FFC107',
+              'font-size': '9', 'font-family': 'SF Mono,Fira Code,monospace',
+            });
+            lbl.textContent = '⊕ rank';
+            svg.appendChild(lbl);
+          });
+        }
+
+        // Nodes
+        Object.values(nodes).forEach(n => {
+          const st  = nodeStatuses[n.id] || 'idle';
+          const col = C[st] || C.idle;
+          const arr = arrays[n.id] || n.arr;
+          const ew  = n._ew || 16;
+          const nw  = Math.max(40, arr.length * ew + 12);
+          const x   = n.cx - nw / 2, y = n.cy - n.h / 2;
+
+          // Shadow for active nodes
+          if (st !== 'idle') {
+            svg.appendChild($svg('rect', {
+              x: x-1, y: y-1, width: nw+2, height: n.h+2, rx: 9, ry: 9,
+              fill: 'none', stroke: col.stroke,
+              'stroke-width': 0.5, opacity: 0.4,
+            }));
+          }
+
+          svg.appendChild($svg('rect', {
+            x, y, width: nw, height: n.h, rx: 8, ry: 8,
+            fill: col.fill, stroke: col.stroke, 'stroke-width': 1.5,
+          }));
+
+          // Element cells
+          const cellH = 18;
+          const cellY = y + (n.h - cellH) / 2;
+          arr.forEach((val, i) => {
+            const cx2 = x + 8 + i * ew;
+            svg.appendChild($svg('rect', {
+              x: cx2, y: cellY, width: Math.max(1, ew - 2), height: cellH,
+              rx: 4, ry: 4, fill: col.stroke,
+              opacity: st === 'idle' ? '0.12' : '0.22',
+            }));
+            if (ew > 10) {
+              const t = $svg('text', {
+                x: cx2 + (ew - 2) / 2, y: cellY + cellH / 2 + 4,
+                'text-anchor': 'middle', fill: col.text,
+                'font-size': Math.min(11, ew - 3),
+                'font-family': 'SF Mono,Fira Code,monospace', 'font-weight': '600',
+              });
+              t.textContent = val;
+              svg.appendChild(t);
+            }
+          });
+
+          // Status glyph
+          const glyphs = { splitting:'⇅', ranking:'⊕', merging:'⇌', sorted:'✓', done:'✓' };
+          if (glyphs[st]) {
+            const g = $svg('text', {
+              x: x + nw - 5, y: y + 10, 'text-anchor': 'end',
+              fill: col.stroke, 'font-size': '9',
+              'font-family': 'SF Mono,Fira Code,monospace',
+            });
+            g.textContent = glyphs[st];
+            svg.appendChild(g);
+          }
+
+          // Hover hitbox
+          const hit = $svg('rect', {
+            x, y, width: nw, height: n.h, rx: 8, ry: 8,
+            fill: 'transparent', stroke: 'none', cursor: 'pointer',
+          });
+          hit.dataset.nodeid = n.id;
+          hit.addEventListener('mouseenter', () => hoverNode(n.id, true));
+          hit.addEventListener('mouseleave', () => hoverNode(n.id, false));
+          svg.appendChild(hit);
+        });
+      }
+
+      // ── Draw Gantt chart ─────────────────────────
+      function drawGantt(currentIdx) {
+        const svg  = document.getElementById('p2-ganttSvg');
+        const W    = svg.clientWidth  || svg.parentElement.clientWidth  || 400;
+        const H    = svg.clientHeight || svg.parentElement.clientHeight || 140;
+        svg.innerHTML = '';
+        svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+        const p          = state.p;
+        const displayP   = Math.min(p, 8);
+        const steps      = state.steps;
+        const maxTime    = Math.max(...steps.map(s => s.parallelTime), 1);
+        const PAD_L      = 26;
+        const PAD_B      = 14;
+        const usableW    = W - PAD_L - 4;
+        const usableH    = H - PAD_B;
+        const COL_W      = usableW / (maxTime + 1);
+        const ROW_H      = usableH / displayP;
+        const PAD_CELL   = 2;
+
+        const typeColor = {
+          split: 'var(--accent)',
+          base:  '#4CAF50',
+          rank:  '#FFC107',
+          merge: '#E8440A',
+        };
+
+        // Row backgrounds + P labels
+        for (let pi = 0; pi < displayP; pi++) {
+          const y = pi * ROW_H;
+          svg.appendChild($svg('rect', {
+            x: PAD_L, y, width: usableW, height: ROW_H,
+            fill: pi % 2 === 0 ? 'rgba(255,255,255,0.025)' : 'transparent',
+          }));
+          const lbl = $svg('text', {
+            x: PAD_L - 4, y: y + ROW_H / 2 + 3.5,
+            'text-anchor': 'end', fill: 'var(--text-muted)',
+            'font-size': '8', 'font-family': 'SF Mono,Fira Code,monospace',
+          });
+          lbl.textContent = `P${pi}`;
+          svg.appendChild(lbl);
+        }
+
+        // Vertical time grid lines + labels
+        for (let t = 1; t <= maxTime; t++) {
+          const x = PAD_L + t * COL_W;
+          svg.appendChild($svg('line', {
+            x1: x, y1: 0, x2: x, y2: usableH,
+            stroke: 'var(--border)', 'stroke-width': '0.5',
+          }));
+        }
+        // Time labels at bottom
+        for (let t = 0; t <= maxTime; t++) {
+          const x = PAD_L + (t + 0.5) * COL_W;
+          const lbl = $svg('text', {
+            x, y: H - 2, 'text-anchor': 'middle',
+            fill: 'var(--text-muted)', 'font-size': '7',
+            'font-family': 'SF Mono,Fira Code,monospace',
+          });
+          lbl.textContent = t;
+          svg.appendChild(lbl);
+        }
+
+        // Task blocks (up to currentIdx)
+        steps.slice(0, currentIdx + 1).forEach((step, si) => {
+          const ops = step.ganttOps || [];
+          const t   = step.parallelTime;
+          ops.forEach((op, i) => {
+            if (op.taskType === 'idle') return;
+            const procId = i % displayP;
+            const col    = typeColor[op.taskType] || 'var(--accent)';
+            const bx     = PAD_L + t * COL_W + PAD_CELL;
+            const by     = procId * ROW_H + PAD_CELL;
+            const bw     = COL_W - PAD_CELL * 2;
+            const bh     = ROW_H - PAD_CELL * 2;
+
+            const rect = $svg('rect', {
+              x: bx, y: by, width: bw, height: bh, rx: 3, ry: 3,
+              fill: col, opacity: si === currentIdx ? '0.95' : '0.45',
+            });
+            if (op.nodeId) {
+              rect.dataset.nodeid = op.nodeId;
+              rect.style.cursor = 'pointer';
+              rect.addEventListener('mouseenter', () => hoverNode(op.nodeId, true));
+              rect.addEventListener('mouseleave', () => hoverNode(op.nodeId, false));
+            }
+            svg.appendChild(rect);
+          });
+        });
+
+        // Current-step highlight column
+        if (currentIdx >= 0) {
+          const t = steps[currentIdx].parallelTime;
+          svg.appendChild($svg('rect', {
+            x: PAD_L + t * COL_W, y: 0,
+            width: COL_W, height: usableH,
+            fill: 'rgba(232,68,10,0.07)', 'pointer-events': 'none',
+          }));
+        }
+      }
+
+      // ── Update Brent panel ───────────────────────
+      function updateBrent() {
+        const { W, D, p } = state;
+        document.getElementById('p2-bW').textContent  = W;
+        document.getElementById('p2-bD').textContent  = D;
+        document.getElementById('p2-procVal').textContent = p;
+        const Tp  = D > 0 ? Math.ceil(W / p) + D : 0;
+        const par = D > 0 ? (W / D).toFixed(1) : '—';
+        const tpEl = document.getElementById('p2-bTp');
+        tpEl.textContent = Tp || '—';
+        document.getElementById('p2-bPar').textContent = par;
+        tpEl.classList.add('flash');
+        setTimeout(() => tpEl.classList.remove('flash'), 280);
+        // also sync stats section
+        document.getElementById('p2-statComparisons').textContent = W;
+        document.getElementById('p2-statMergeOps').textContent    = D;
+        document.getElementById('p2-statDepth').textContent       = par;
+      }
+
+      // ── Hover cross-link ─────────────────────────
+      function hoverNode(nodeId, entering) {
+        document.getElementById('p2-ganttSvg')
+          .querySelectorAll(`[data-nodeid="${nodeId}"]`).forEach(el => {
+            el.style.filter  = entering ? 'brightness(1.5)'  : '';
+            el.style.opacity = entering ? '1'                : '';
+          });
+      }
+
+      // ── History table ────────────────────────────
+      function updateHistory(currentIdx) {
+        const rows = state.steps.slice(0, currentIdx + 1).map((s, i) => {
+          const phase = s.phase[0].toUpperCase() + s.phase.slice(1);
+          const ids   = (s.activeNodeIds || []).map(id => {
+            const n = state.tree.nodes[id];
+            return n ? `[${n.lo}…${n.hi}]` : id;
+          }).join(', ') || '—';
+          const action = {
+            init: 'Array loaded', split: 'Spawn parallel halves',
+            base: 'Base case', rank: 'Binary-search ranking',
+            merge: 'Merge sorted halves', done: 'Sort complete',
+          }[s.phase] || s.phase;
+          return `<tr class="${i === currentIdx ? 'current' : ''}">
+            <td>${i + 1}</td><td>${phase}</td><td>${ids}</td><td>${action}</td></tr>`;
+        }).reverse().join('');
+        document.getElementById('p2-historyBody').innerHTML =
+          rows || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No steps yet</td></tr>';
+      }
+
+      // ── Status ───────────────────────────────────
+      function updateStatus(s) {
+        state.status = s;
+        document.getElementById('p2-statusBadge').className = `status-badge ${s}`;
+        document.getElementById('p2-statusText').textContent =
+          ({ idle:'Idle', ready:'Ready', playing:'Playing', paused:'Paused', done:'Done' })[s] || s;
+      }
+
+      // ── Render step ──────────────────────────────
+      function renderStep(i) {
+        state.currentStep = i;
+        const step = state.steps[i];
+        drawTree(step);
+        drawGantt(i);
+        updateBrent();
+        for (let ln = 1; ln <= 10; ln++) {
+          const el = document.getElementById(`p2-pline-${ln}`);
+          if (el) el.classList.toggle('active', ln === step.pseudoLine);
+        }
+        document.getElementById('p2-explanationBox').innerHTML = step.explanation;
+        document.getElementById('p2-stepCounter').textContent  = `${i + 1} / ${state.steps.length}`;
+        updateHistory(i);
+      }
+
+      // ── Build ────────────────────────────────────
+      function buildSteps() {
+        let arr;
+        try { arr = parseInput(); }
+        catch (e) {
+          document.getElementById('p2-explanationBox').innerHTML =
+            `<span style="color:#F44336;">${e.message}</span>`;
+          return;
+        }
+        state.arr  = arr;
+        state.p    = +document.getElementById('p2-procSliderInput').value;
+        document.getElementById('p2-procSlider').value   = state.p;
+        document.getElementById('p2-procVal').textContent = state.p;
+        state.tree  = buildTree(arr);
+        state.steps = generateSteps(state.tree);
+        const wd = computeWD(arr.length);
+        state.W = wd.W; state.D = wd.D;
+
+        document.getElementById('p2-vizIdleHint').style.display = 'none';
+        document.getElementById('p2-mainViz').style.display     = 'flex';
+
+        state.currentStep = 0;
+        renderStep(0);
+        updateStatus('ready');
+        ['p2-btnStep','p2-btnPlay','p2-btnReset'].forEach(id =>
+          (document.getElementById(id).disabled = false));
+        document.getElementById('p2-btnPause').disabled = true;
+      }
+
+      // ── Playback ─────────────────────────────────
+      function play() {
+        if (state.isPlaying) return;
+        if (state.currentStep >= state.steps.length - 1) state.currentStep = 0;
+        state.isPlaying = true;
+        updateStatus('playing');
+        document.getElementById('p2-btnPlay').disabled  = true;
+        document.getElementById('p2-btnPause').disabled = false;
+        document.getElementById('p2-btnStep').disabled  = true;
+        document.getElementById('p2-controlsPill').classList.add('pinned');
+        function tick() {
+          if (!state.isPlaying) return;
+          if (state.currentStep >= state.steps.length - 1) { pause(); updateStatus('done'); return; }
+          renderStep(++state.currentStep);
+          state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
+        }
+        state.playTimer = setTimeout(tick, Math.round(1000 / state.speed));
+      }
+
+      function pause() {
+        clearTimeout(state.playTimer);
+        state.isPlaying = false;
+        updateStatus(state.currentStep >= state.steps.length - 1 ? 'done' : 'paused');
+        document.getElementById('p2-btnPlay').disabled  = false;
+        document.getElementById('p2-btnPause').disabled = true;
+        document.getElementById('p2-btnStep').disabled  = state.currentStep >= state.steps.length - 1;
+        document.getElementById('p2-controlsPill').classList.remove('pinned');
+      }
+
+      function step() {
+        if (state.isPlaying || state.currentStep >= state.steps.length - 1) return;
+        renderStep(++state.currentStep);
+        if (state.currentStep >= state.steps.length - 1) {
+          updateStatus('done');
+          document.getElementById('p2-btnStep').disabled = true;
+          document.getElementById('p2-btnPlay').disabled = true;
+        }
+      }
+
+      function reset() {
+        clearTimeout(state.playTimer);
+        Object.assign(state, {
+          arr:[], tree:null, steps:[], currentStep:-1,
+          isPlaying:false, status:'idle', playTimer:null, W:0, D:0,
+        });
+        document.getElementById('p2-vizIdleHint').style.display = '';
+        document.getElementById('p2-mainViz').style.display     = 'none';
+        document.getElementById('p2-treeSvg').innerHTML  = '';
+        document.getElementById('p2-ganttSvg').innerHTML = '';
+        document.getElementById('p2-explanationBox').innerHTML =
+          'Enter an array in <strong>Input &amp; Presets</strong> below, then press <strong>Build</strong> in the controls above to start.';
+        document.getElementById('p2-stepCounter').textContent  = '— / —';
+        document.getElementById('p2-statComparisons').textContent = '—';
+        document.getElementById('p2-statMergeOps').textContent    = '—';
+        document.getElementById('p2-statDepth').textContent       = '—';
+        document.getElementById('p2-bW').textContent  = '—';
+        document.getElementById('p2-bD').textContent  = '—';
+        document.getElementById('p2-bTp').textContent = '—';
+        document.getElementById('p2-bPar').textContent = '—';
+        document.getElementById('p2-historyBody').innerHTML =
+          '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);font-family:var(--font-ui);">No steps yet</td></tr>';
+        for (let ln = 1; ln <= 10; ln++) {
+          const el = document.getElementById(`p2-pline-${ln}`);
+          if (el) el.classList.remove('active');
+        }
+        ['p2-btnStep','p2-btnPlay','p2-btnPause','p2-btnReset'].forEach(id =>
+          (document.getElementById(id).disabled = true));
+        updateStatus('idle');
+      }
+
+      // ── Init ─────────────────────────────────────
       function init() {
         makePillController('p2-vizHero', 'p2-controlsPill');
+
         document.getElementById('p2-speedSlider').addEventListener('input', function () {
           document.getElementById('p2-speedValue').textContent = `${this.value}×`;
           state.speed = +this.value;
         });
+
+        // Brent panel slider (inside viz)
+        document.getElementById('p2-procSlider').addEventListener('input', function () {
+          state.p = +this.value;
+          document.getElementById('p2-procVal').textContent        = this.value;
+          document.getElementById('p2-procValInput').textContent   = this.value;
+          document.getElementById('p2-procSliderInput').value      = this.value;
+          if (state.steps.length) { drawGantt(state.currentStep); updateBrent(); }
+        });
+
+        // Input section slider (syncs with Brent panel slider)
+        document.getElementById('p2-procSliderInput').addEventListener('input', function () {
+          state.p = +this.value;
+          document.getElementById('p2-procValInput').textContent   = this.value;
+          document.getElementById('p2-procVal').textContent        = this.value;
+          document.getElementById('p2-procSlider').value           = this.value;
+          if (state.steps.length) { drawGantt(state.currentStep); updateBrent(); }
+        });
+
         document.getElementById('p2-btnBuild').addEventListener('click', buildSteps);
         document.getElementById('p2-btnStep').addEventListener('click', step);
         document.getElementById('p2-btnPlay').addEventListener('click', play);
         document.getElementById('p2-btnPause').addEventListener('click', pause);
         document.getElementById('p2-btnReset').addEventListener('click', reset);
+
+        window.addEventListener('resize', () => {
+          if (state.steps.length && state.currentStep >= 0) renderStep(state.currentStep);
+        });
       }
 
       return { init };
