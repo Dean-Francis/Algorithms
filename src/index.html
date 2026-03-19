@@ -770,6 +770,24 @@
       border-right: 1px solid var(--border);
       overflow: hidden;
     }
+    .p1-scratch-heading {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 4;
+      padding: 14px 48px 12px;
+      display: flex; align-items: baseline; gap: 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-base);
+      pointer-events: none;
+    }
+    .p1-scratch-heading__title {
+      font-family: var(--font-mono);
+      font-size: var(--text-sm); font-weight: 600;
+      color: var(--text-primary); letter-spacing: 0.01em;
+    }
+    .p1-scratch-heading__sub {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs); color: var(--text-muted);
+      letter-spacing: 0.02em;
+    }
     /* Overlay — intro & result moments */
     .p1-ov {
       position: absolute; inset: 0; z-index: 5;
@@ -785,11 +803,69 @@
       width: 100%; padding: 0 32px;
       animation: p3FadeUp 0.4s var(--ease-spring);
     }
+
+    /* ── Result card (Apple-esque staggered reveal) ── */
+    @keyframes p1SlideUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: none; }
+    }
+    @keyframes p1FadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .p1-result-card {
+      display: flex; flex-direction: column; align-items: center;
+      width: 100%; max-width: 560px;
+      padding: 48px 48px 40px;
+      gap: 0;
+    }
+    .p1-result-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.2px;
+      text-transform: uppercase; color: var(--text-muted);
+      opacity: 0; animation: p1FadeIn 0.4s 0.05s var(--ease) forwards;
+      margin-bottom: 18px;
+    }
+    .p1-result-cost {
+      font-family: 'Georgia','Times New Roman',serif;
+      font-size: clamp(2.6rem, 5.5vw, 4rem); font-weight: 700;
+      color: var(--accent); line-height: 1;
+      letter-spacing: -1px;
+      opacity: 0; animation: p1SlideUp 0.5s 0.15s cubic-bezier(0.25,0,0,1) forwards;
+      margin-bottom: 6px;
+    }
+    .p1-result-unit {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.9px;
+      text-transform: uppercase; color: var(--text-muted);
+      opacity: 0; animation: p1FadeIn 0.4s 0.28s var(--ease) forwards;
+      margin-bottom: 32px;
+    }
+    .p1-result-sep {
+      width: 100%; height: 1px; margin-bottom: 28px;
+      background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%);
+      opacity: 0; animation: p1FadeIn 0.5s 0.38s var(--ease) forwards;
+    }
+    .p1-result-paren {
+      font-size: clamp(0.95rem, 1.8vw, 1.25rem);
+      line-height: 2; letter-spacing: 0.02em;
+      display: flex; align-items: baseline; flex-wrap: wrap;
+      justify-content: center; gap: 2px; row-gap: 4px;
+      width: 100%;
+      opacity: 0; animation: p1SlideUp 0.5s 0.48s cubic-bezier(0.25,0,0,1) forwards;
+      margin-bottom: 28px;
+    }
+    .p1-result-tree-wrap {
+      width: 100%; position: relative;
+      opacity: 0; animation: p1FadeIn 0.5s 0.60s var(--ease) forwards;
+    }
+    .p1-result-tree-wrap svg {
+      display: block; width: 100%; overflow: visible;
+    }
+
     /* Work-chain — accumulated k-trial equations */
     .p1-work-chain {
       position: absolute; inset: 0; z-index: 3;
       overflow-y: auto; overflow-x: hidden;
-      padding: 28px 48px 80px;
+      padding: 72px 48px 80px;
     }
     .p1-wc-header {
       font-size: var(--text-xs); font-weight: 600;
@@ -802,8 +878,8 @@
     .p1-wc-header:first-child { border-top: none; margin-top: 0; padding-top: 0; }
     .p1-wc-line {
       font-family: var(--font-mono);
-      font-size: clamp(0.78rem, 1.4vw, 0.95rem);
-      line-height: 2.3; white-space: pre;
+      font-size: clamp(0.88rem, 1.6vw, 1.08rem);
+      line-height: 2.4; white-space: pre;
       position: relative; padding-left: 18px;
       color: var(--text-muted);
     }
@@ -822,12 +898,12 @@
       border-radius: var(--radius-pill);
     }
     .p1-ledger {
-      flex: 1; min-width: 0;
+      flex: 1.4; min-width: 0;
       display: flex; flex-direction: column;
       overflow: hidden;
     }
     .p1-ledger-chain {
-      flex: 0 0 88px;
+      flex: 0 0 108px;
       border-bottom: 1px solid var(--border);
       display: flex; flex-direction: column; overflow: hidden;
     }
@@ -983,6 +1059,10 @@
           <!-- Left: scratch pad (75%) -->
           <div class="p1-scratchpad" id="p1-scratchpad">
             <div id="p1-overlay" class="p1-ov" style="display:none;"></div>
+            <div id="p1-scratchHeading" class="p1-scratch-heading" style="display:none;">
+              <span class="p1-scratch-heading__title">Recurrence</span>
+              <span class="p1-scratch-heading__sub" id="p1-scratchSub"></span>
+            </div>
             <div id="p1-workChain" class="p1-work-chain" style="display:none;"></div>
           </div>
           <!-- Right: ledger (25%) -->
@@ -2217,6 +2297,9 @@
         ov.style.display = 'flex';
         ov.offsetHeight; // force reflow
         ov.classList.add('visible');
+        // Heading belongs to the work-chain, not the overlay
+        const h = document.getElementById('p1-scratchHeading');
+        if (h) h.style.display = 'none';
       }
       function hideOv() {
         const ov = document.getElementById('p1-overlay');
@@ -2234,6 +2317,15 @@
         const chain = document.getElementById('p1-workChain');
         chain.innerHTML = '';
         chain.style.display = '';
+
+        // Show heading and update subtitle with current subproblem
+        const curSt = state.steps[upToIdx];
+        const heading = document.getElementById('p1-scratchHeading');
+        const sub     = document.getElementById('p1-scratchSub');
+        if (heading) heading.style.display = '';
+        if (sub && curSt) {
+          sub.textContent = `m[${curSt.i}][${curSt.j}]  ·  k = ${curSt.k}`;
+        }
 
         const p   = state.p;
         const fmt = v => v === Infinity ? '∞' : v.toLocaleString();
@@ -2279,6 +2371,21 @@
       function buildParenPlain(s, i, j) {
         if (i === j) return `A${i}`;
         return `(${buildParenPlain(s, i, s[i][j])} ${buildParenPlain(s, s[i][j]+1, j)})`;
+      }
+
+      // HTML version — proper A<sub>i</sub> notation, serif math font
+      function buildParenHTML(s, i, j) {
+        const A = n =>
+          `<span style="font-family:'Georgia',serif;color:var(--accent);">A<sub style="font-size:0.52em;font-weight:600;">${n}</sub></span>`;
+        const paren = c =>
+          `<span style="color:var(--text-muted);font-family:'Georgia',serif;">(</span>` +
+          c +
+          `<span style="color:var(--text-muted);font-family:'Georgia',serif;">)</span>`;
+        function build(i, j) {
+          if (i === j) return A(i);
+          return paren(build(i, s[i][j]) + build(s[i][j]+1, j));
+        }
+        return build(i, j);
       }
 
       function drawTree(svg, s, n, cx, startY, availW, availH) {
@@ -2331,32 +2438,69 @@
           y: startY + nd.depth * levelH
         }));
 
-        // Edges first
+        // Group nodes by depth for stagger timing (root first, leaves last)
+        const depthOrder = nodes.map((_, i) => i).sort((a, b) => nodes[a].depth - nodes[b].depth);
+        const staggerMs  = Math.min(80, 400 / Math.max(nodes.length, 1));
+
+        // Edges — faint, appear with their child node
         edges.forEach(e => {
-          svg.appendChild(svgEl('line', {
+          const delay = (depthOrder.indexOf(e.to) * staggerMs).toFixed(0);
+          const line  = svgEl('line', {
             x1: pos[e.from].x, y1: pos[e.from].y,
             x2: pos[e.to].x,   y2: pos[e.to].y,
-            stroke: border, 'stroke-width': 1.5
-          }));
+            stroke: border, 'stroke-width': 1.2,
+            opacity: '0',
+            style: `animation:p1FadeIn 0.35s ${delay}ms cubic-bezier(0.25,0.1,0.25,1) forwards`
+          });
+          svg.appendChild(line);
         });
 
-        // Nodes
-        nodes.forEach((nd, idx) => {
+        // Nodes — each group slides up with stagger
+        depthOrder.forEach((idx, order) => {
+          const nd     = nodes[idx];
           const isLeaf = nd.left === -1;
           const label  = nd.i === nd.j ? `A${nd.i}` : `${nd.i}…${nd.j}`;
-          svg.appendChild(svgEl('circle', {
+          const delay  = (order * staggerMs).toFixed(0);
+          const anim   = `animation:p1SlideUp 0.38s ${delay}ms cubic-bezier(0.25,0.1,0.25,1) both`;
+
+          const grp = svgEl('g', { style: `opacity:0;${anim}` });
+
+          grp.appendChild(svgEl('circle', {
             cx: pos[idx].x, cy: pos[idx].y, r,
             fill: isLeaf ? accentDim : bgElevated,
             stroke: isLeaf ? accent : border,
             'stroke-width': isLeaf ? 1.5 : 1
           }));
-          svg.appendChild(svgEl('text', {
-            x: pos[idx].x, y: pos[idx].y,
-            'font-family': '"SF Mono","Fira Code",monospace',
-            'font-size': Math.min(9, r * 0.68),
-            fill: isLeaf ? accent : textSec,
-            'text-anchor': 'middle', 'dominant-baseline': 'middle'
-          }, label));
+
+          // Label: leaf = "Aₙ" via two text elements; internal = "i…j"
+          if (isLeaf) {
+            const lfs  = Math.min(r * 0.55, 9);
+            const sfs  = Math.max(5, lfs * 0.60);
+            const cx_  = pos[idx].x;
+            const cy_  = pos[idx].y;
+            grp.appendChild(svgEl('text', {
+              x: cx_ - sfs * 0.2, y: cy_,
+              'font-family': "'Georgia','Times New Roman',serif",
+              'font-size': lfs, 'font-weight': 600,
+              fill: accent, 'text-anchor': 'end', 'dominant-baseline': 'middle'
+            }, 'A'));
+            grp.appendChild(svgEl('text', {
+              x: cx_ - sfs * 0.2 + 1, y: cy_ + lfs * 0.28,
+              'font-family': "'Georgia','Times New Roman',serif",
+              'font-size': sfs, 'font-weight': 600,
+              fill: accent, 'text-anchor': 'start', 'dominant-baseline': 'middle'
+            }, `${nd.i}`));
+          } else {
+            grp.appendChild(svgEl('text', {
+              x: pos[idx].x, y: pos[idx].y,
+              'font-family': '"SF Mono","Fira Code",monospace',
+              'font-size': Math.min(8, r * 0.60),
+              fill: textSec,
+              'text-anchor': 'middle', 'dominant-baseline': 'middle'
+            }, label));
+          }
+
+          svg.appendChild(grp);
         });
       }
 
@@ -2379,27 +2523,45 @@
 
         const p = state.p;
         const n = state.n;
-        const pad = 10;
-        const rectH = Math.min(34, (H - 26) * 0.75);
-        const rectW = Math.min(38, Math.max(20, (W - pad*2 - (n-1)*4) / n));
-        const gap   = Math.max(3, (W - pad*2 - n*rectW) / Math.max(n-1, 1));
+
+        // ── Fixed geometry constants ──────────────────
+        const padH       = 14;   // horizontal padding each side
+        const padV       = 8;    // vertical padding top/bottom
+        const bracketH   = 14;   // clearance above box for bracket
+        const dimFontSz  = Math.min(9, Math.max(7, (W - padH*2) / (n * 5.5)));
+        const dimH       = dimFontSz + 2;     // cap-height of dim label
+        const dimGap     = 8;    // gap between box bottom edge and top of dim label
+
+        // ── Box dimensions ────────────────────────────
+        const availBoxH  = H - padV*2 - bracketH - dimGap - dimH;
+        const rectH      = Math.min(44, Math.max(22, availBoxH));
+        const rectW      = Math.min(52, Math.max(22, (W - padH*2 - (n-1)*8) / n));
+        const gap        = Math.max(6, Math.min(16, (W - padH*2 - n*rectW) / Math.max(n-1, 1)));
+
+        // ── Center block vertically & horizontally ────
+        const totalH  = bracketH + rectH + dimGap + dimH;
+        const blockTop = (H - totalH) / 2;
+        const matY    = blockTop + bracketH;              // top edge of boxes
+        // dimY = centre of dim label = box bottom + gap + half the label cap-height
+        const dimY    = matY + rectH + dimGap + dimH / 2;
+
         const totalW = n*rectW + (n-1)*gap;
-        const startX = (W - totalW) / 2;
-        const matY   = (H - rectH) / 2 - 4;
+        const startX = Math.max(padH, (W - totalW) / 2);
 
         // Bracket for active range
         if (st.phase === 'test') {
           const bL = startX + (st.i - 1) * (rectW + gap);
           const bR = startX + (st.j - 1) * (rectW + gap) + rectW;
-          const bY = matY - 8;
+          const bTop = blockTop + 2;
+          const bArmH = Math.min(8, bracketH - 4);
           svg.appendChild(svgEl('path', {
-            d: `M ${bL},${bY+7} L ${bL},${bY} L ${bR},${bY} L ${bR},${bY+7}`,
+            d: `M ${bL},${bTop+bArmH} L ${bL},${bTop} L ${bR},${bTop} L ${bR},${bTop+bArmH}`,
             stroke: accent, 'stroke-width': 1.5, fill: 'none', 'stroke-linecap': 'round'
           }));
           // Split marker
           const splitX = startX + st.k * (rectW + gap) - gap/2;
           svg.appendChild(svgEl('line', {
-            x1: splitX, y1: matY - 8, x2: splitX, y2: matY + rectH + 2,
+            x1: splitX, y1: matY - 2, x2: splitX, y2: matY + rectH + 2,
             stroke: accent, 'stroke-width': 1.5, 'stroke-dasharray': '3,2'
           }));
         }
@@ -2411,22 +2573,42 @@
           const grp = svgEl('g', { opacity: outside ? '0.3' : '1' });
 
           grp.appendChild(svgEl('rect', {
-            x: mx, y: matY, width: rectW, height: rectH, rx: 4,
+            x: mx, y: matY, width: rectW, height: rectH,
+            rx: Math.round(rectW * 0.12),
             fill: inRange ? accentDim : bgElevated,
             stroke: inRange ? accent : border,
             'stroke-width': inRange ? 1.5 : 1
           }));
+          // SVG subscript: two separate text elements (cross-browser reliable)
+          const labelFs  = Math.min(14, Math.max(9, rectW * 0.3));
+          const subFs    = Math.max(6, labelFs * 0.60);
+          const cx       = mx + rectW / 2;
+          const cy       = matY + rectH / 2;
+          const labelCol = inRange ? accent : textSec;
+          // "A" — shifted slightly left of centre
           grp.appendChild(svgEl('text', {
-            x: mx + rectW/2, y: matY + rectH/2,
-            'font-family': 'sans-serif', 'font-size': Math.min(10, rectW * 0.28), 'font-weight': 600,
-            fill: inRange ? accent : textSec,
-            'text-anchor': 'middle', 'dominant-baseline': 'middle'
-          }, `A${mi}`));
+            x: cx - subFs * 0.25, y: cy,
+            'font-family': "'Georgia','Times New Roman',serif",
+            'font-size': labelFs,
+            'font-weight': 600,
+            fill: labelCol,
+            'text-anchor': 'end', 'dominant-baseline': 'middle'
+          }, 'A'));
+          // subscript number — right of "A" and shifted down by ~35% of label size
           grp.appendChild(svgEl('text', {
-            x: mx + rectW/2, y: matY + rectH + 11,
-            'font-family': '"SF Mono","Fira Code",monospace', 'font-size': 7,
-            fill: textMuted, 'text-anchor': 'middle'
-          }, `${p[mi-1]}×${p[mi]}`));
+            x: cx - subFs * 0.25 + 1, y: cy + labelFs * 0.30,
+            'font-family': "'Georgia','Times New Roman',serif",
+            'font-size': subFs,
+            'font-weight': 600,
+            fill: labelCol,
+            'text-anchor': 'start', 'dominant-baseline': 'middle'
+          }, `${mi}`));
+          grp.appendChild(svgEl('text', {
+            x: mx + rectW/2, y: dimY,
+            'font-family': '"SF Mono","Fira Code",monospace',
+            'font-size': dimFontSz,
+            fill: textMuted, 'text-anchor': 'middle', 'dominant-baseline': 'middle'
+          }, `${p[mi-1]}\u00D7${p[mi]}`));
 
           svg.appendChild(grp);
         }
@@ -2451,17 +2633,18 @@
         const bgElevated = cssVar('--bg-elevated');
 
         const n = state.n;
-        const pad = 6;
-        const cellSz = Math.min(34, Math.max(14, Math.min(
-          (W - pad*2) / (n + 1),
-          (H - pad*2) / (n + 1)
-        )));
+        const pad = 4;
+        // Width drives cell size (more space available horizontally after widening ledger).
+        // Height only shrinks cells when truly cramped — never let them go below 16px.
+        const cellByW = Math.floor((W - pad*2) / (n + 1));
+        const cellByH = Math.floor((H - pad*2) / (n + 1));
+        const cellSz  = Math.min(52, Math.max(16, Math.min(cellByW, Math.max(cellByH, 16))));
         const tblW = (n + 1) * cellSz;
         const tblH = (n + 1) * cellSz;
         const tblX = (W - tblW) / 2;
-        const tblY = (H - tblH) / 2;
-        const hdrFs = Math.min(8, cellSz * 0.28);
-        const valFs = Math.min(9,  cellSz * 0.32);
+        const tblY = Math.max(pad, (H - tblH) / 2);
+        const hdrFs = Math.min(12, Math.max(8, cellSz * 0.30));
+        const valFs = Math.min(13, Math.max(9, cellSz * 0.36));
 
         // Column headers
         for (let j = 1; j <= n; j++) {
@@ -2502,7 +2685,8 @@
             }
 
             svg.appendChild(svgEl('rect', {
-              x: cx+1, y: cy+1, width: cellSz-2, height: cellSz-2, rx: 3,
+              x: cx+1, y: cy+1, width: cellSz-2, height: cellSz-2,
+              rx: Math.max(2, Math.round(cellSz * 0.1)),
               fill: cellFill, stroke: cellStroke,
               'stroke-width': isCur ? 1.5 : 1,
               opacity: isLower ? '0.2' : '1'
@@ -2513,7 +2697,12 @@
               if (tableType === 'm') {
                 if (isDiag) disp = '0';
                 else if (val !== Infinity) {
-                  disp = val >= 10000 ? Math.round(val/1000)+'k' : val.toLocaleString();
+                  // Choose format that fits the cell: full → abbreviated → compact
+                  if (val < 10000)                disp = val.toLocaleString();
+                  else if (val < 100000)          disp = (val/1000).toFixed(1)+'k';
+                  else                            disp = Math.round(val/1000)+'k';
+                  // If abbreviation would still overflow a small cell, go shorter
+                  if (cellSz < 28 && val >= 1000) disp = Math.round(val/1000)+'k';
                 }
               } else {
                 if (!isDiag && val > 0) disp = val.toString();
@@ -2588,24 +2777,27 @@
 
         } else if (st.phase === 'result') {
           document.getElementById('p1-workChain').style.display = 'none';
-          const parenStr = buildParenPlain(st.s, 1, st.n);
+          const parenHTML = buildParenHTML(st.s, 1, st.n);
+          // Tree height scales with matrix count (more levels = taller)
+          const treeH = Math.max(220, Math.min(340, st.n * 52));
           showOv(
-            `<div class="p3-ov__label">Optimal Solution</div>` +
-            `<div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.2rem)">`+
-            `${st.optimalCost.toLocaleString()}</div>` +
-            `<div class="p3-ov__label">scalar multiplications</div>` +
-            `<div class="p3-ov__sep"></div>` +
-            `<div class="p3-ov__eq-md">${parenStr}</div>` +
-            `<svg id="p1-treeSvg" style="width:min(420px,90%);height:170px;flex-shrink:0;" `+
-            `xmlns="http://www.w3.org/2000/svg"></svg>`
+            `<div class="p1-result-card">` +
+              `<div class="p1-result-label">Optimal Solution</div>` +
+              `<div class="p1-result-cost">${st.optimalCost.toLocaleString()}</div>` +
+              `<div class="p1-result-unit">scalar multiplications</div>` +
+              `<div class="p1-result-sep"></div>` +
+              `<div class="p1-result-paren">${parenHTML}</div>` +
+              `<div class="p1-result-tree-wrap">` +
+                `<svg id="p1-treeSvg" height="${treeH}" xmlns="http://www.w3.org/2000/svg"></svg>` +
+              `</div>` +
+            `</div>`
           );
-          // Draw tree into the inline SVG after it's in the DOM
           requestAnimationFrame(() => {
             const tsvg = document.getElementById('p1-treeSvg');
             if (tsvg) {
-              const W = tsvg.clientWidth  || 420;
-              const H = tsvg.clientHeight || 170;
-              drawTree(tsvg, st.s, st.n, W/2, 18, W * 0.92, H - 28);
+              const W = tsvg.parentElement.clientWidth || 460;
+              tsvg.setAttribute('width', W);
+              drawTree(tsvg, st.s, st.n, W/2, 20, W * 0.88, treeH - 32);
             }
           });
         }
@@ -2726,9 +2918,10 @@
                 const tsvg = document.getElementById('p1-treeSvg');
                 if (tsvg) {
                   tsvg.innerHTML = '';
-                  const W = tsvg.clientWidth  || 420;
-                  const H = tsvg.clientHeight || 170;
-                  drawTree(tsvg, st.s, st.n, W/2, 18, W * 0.92, H - 28);
+                  const W = tsvg.parentElement.clientWidth || 460;
+                  const H = parseInt(tsvg.getAttribute('height')) || 200;
+                  tsvg.setAttribute('width', W);
+                  drawTree(tsvg, st.s, st.n, W/2, 20, W * 0.88, H - 32);
                 }
               });
             }
