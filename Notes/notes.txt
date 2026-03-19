@@ -1,28 +1,3 @@
-Possible UI/UX designs
-
-CLO1 - Matrix Chain Multiplication
-- The canvas Layout i want a 75/25 split horizontally 
-  75% = Working out space
-  25% = 2 Tables (Tabulation method following the bottom up approach)
-
-
-- Start Asking for an Input
-  Input should be 5x4, 4x6, etc... 
-  apply input validation
-  A of size m x n
-  B of size p x q
-  Then A x B is defined only if 
-  n = p 
-  The resulting matrix will have the size 
-  m x q
-  if it's correct the input will be at the top of the "working out section" A1 subscript m x n, etc...
-
-CLO2 - Parallel Merge Sort
-- Processor Timeline The unused space vertically can be adjusted dynamically based on how many processors are used?
-- Enlarge the Input and Output
-
-All
-- Remove CLO's from the title 
-- Add a play back method
-- Add CUD Logo
-- Optional Fix Light mode, some areas are not visible when i go to light mode
+- Check Bugs
+- Add Link Image
+- Find a better logo
