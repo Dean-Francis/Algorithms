@@ -67,21 +67,21 @@
     [data-theme="light"] {
       --bg-base:     #F2F2F7;
       --bg-surface:  #FFFFFF;
-      --bg-elevated: #F2F2F7;
-      --bg-hover:    #E5E5EA;
+      --bg-elevated: #E8E8ED;
+      --bg-hover:    #E0E0E5;
 
-      --border:       rgba(0, 0, 0, 0.08);
+      --border:       rgba(0, 0, 0, 0.10);
       --border-focus: var(--accent);
 
       --text-primary:   #1C1C1E;
-      --text-secondary: #6C6C70;
-      --text-muted:     #C7C7CC;
+      --text-secondary: #48484A;
+      --text-muted:     #8E8E93;
 
       --shadow-card:     0 1px 4px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04);
       --shadow-elevated: 0 8px 32px rgba(0,0,0,0.12);
 
-      --glass-bg:     rgba(242, 242, 247, 0.82);
-      --glass-border: rgba(0, 0, 0, 0.08);
+      --glass-bg:     rgba(242, 242, 247, 0.88);
+      --glass-border: rgba(0, 0, 0, 0.10);
     }
 
     /* ═══════════════════════════════════════════════════
@@ -123,30 +123,40 @@
       transition: width var(--dur-normal) var(--ease);
     }
 
-    .nav-rail:hover { width: 210px; }
+    .nav-rail:hover { width: 224px; }
 
     .nav-logo-row {
       display: flex; align-items: center;
       width: 100%; padding: 0 10px;
-      margin-bottom: var(--sp-lg);
+      margin-bottom: 0;
       gap: var(--sp-sm); flex-shrink: 0;
     }
 
     .nav-logo {
-      width: 28px; height: 28px;
+      width: 36px; height: 36px;
       border-radius: var(--radius-sm);
-      background: var(--accent);
+      background: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+      flex-shrink: 0; overflow: hidden;
     }
+    .nav-logo svg { width: 26px; height: 26px; }
 
     .nav-logo-label {
-      font-size: var(--text-sm); font-weight: 600;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.01em;
       color: var(--text-primary); white-space: nowrap;
       opacity: 0; transition: opacity var(--dur-fast) var(--ease);
     }
 
     .nav-rail:hover .nav-logo-label { opacity: 1; }
+
+    .nav-sep {
+      width: calc(100% - 20px); height: 1px;
+      background: var(--border);
+      margin: 14px 0;
+      flex-shrink: 0;
+      opacity: 0; transition: opacity var(--dur-fast) var(--ease);
+    }
+    .nav-rail:hover .nav-sep { opacity: 1; }
 
     .nav-item {
       display: flex; align-items: center;
@@ -319,6 +329,20 @@
 
     .pill-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
     [data-theme="light"] .pill-btn:hover:not(:disabled) { background: rgba(0,0,0,0.06); }
+
+    /* ── Light mode fixes ───────────────────────────── */
+    /* p3 equation color (hardcoded #90CAF9 is invisible on light bg) */
+    [data-theme="light"] .p3-ov__eq-md { color: var(--text-primary); }
+    /* nav rail bg */
+    [data-theme="light"] .nav-rail { background: var(--bg-surface); border-right: 1px solid var(--border); }
+    /* work-chain seen lines: dark theme uses white-ish, needs darkening */
+    [data-theme="light"] .p1-wc-line.seen { color: var(--text-secondary); opacity: 0.7; }
+    [data-theme="light"] .p1-wc-line { color: var(--text-secondary); }
+    /* back-chain (CLO-3) cards */
+    [data-theme="light"] .p3-step-card { background: var(--bg-surface); border-color: var(--border); }
+    /* result label in overlay */
+    [data-theme="light"] .p1-result-label { color: var(--text-muted); }
+    [data-theme="light"] .p1-result-unit  { color: var(--text-muted); }
     .pill-btn:active:not(:disabled) { transform: scale(0.93); }
     .pill-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
@@ -770,24 +794,6 @@
       border-right: 1px solid var(--border);
       overflow: hidden;
     }
-    .p1-scratch-heading {
-      position: absolute; top: 0; left: 0; right: 0; z-index: 4;
-      padding: 14px 48px 12px;
-      display: flex; align-items: baseline; gap: 10px;
-      border-bottom: 1px solid var(--border);
-      background: var(--bg-base);
-      pointer-events: none;
-    }
-    .p1-scratch-heading__title {
-      font-family: var(--font-mono);
-      font-size: var(--text-sm); font-weight: 600;
-      color: var(--text-primary); letter-spacing: 0.01em;
-    }
-    .p1-scratch-heading__sub {
-      font-family: var(--font-mono);
-      font-size: var(--text-xs); color: var(--text-muted);
-      letter-spacing: 0.02em;
-    }
     /* Overlay — intro & result moments */
     .p1-ov {
       position: absolute; inset: 0; z-index: 5;
@@ -861,29 +867,29 @@
       display: block; width: 100%; overflow: visible;
     }
 
-    /* Work-chain — accumulated k-trial equations */
+    /* Work-chain — matches p3-back-chain exactly */
     .p1-work-chain {
       position: absolute; inset: 0; z-index: 3;
       overflow-y: auto; overflow-x: hidden;
-      padding: 72px 48px 80px;
+      padding: 130px 50px 140px;
     }
     .p1-wc-header {
       font-size: var(--text-xs); font-weight: 600;
       letter-spacing: 0.8px; text-transform: uppercase;
       color: var(--text-muted);
-      margin-top: 26px; margin-bottom: 8px;
-      padding-top: 18px;
+      margin-top: 28px; margin-bottom: 16px;
+      padding-top: 20px;
       border-top: 1px solid var(--border);
     }
     .p1-wc-header:first-child { border-top: none; margin-top: 0; padding-top: 0; }
     .p1-wc-line {
       font-family: var(--font-mono);
-      font-size: clamp(0.88rem, 1.6vw, 1.08rem);
+      font-size: clamp(0.82rem, 1.7vw, 1.05rem);
       line-height: 2.4; white-space: pre;
-      position: relative; padding-left: 18px;
+      position: relative; padding-left: 16px;
       color: var(--text-muted);
     }
-    .p1-wc-line.seen { color: var(--text-secondary); opacity: 0.55; }
+    .p1-wc-line.seen { color: var(--text-secondary); opacity: 0.65; }
     .p1-wc-line.best.seen { color: #4CAF50; opacity: 0.5; }
     .p1-wc-line.cur {
       color: var(--accent);
@@ -1009,9 +1015,13 @@
   ═══════════════════════════════════════════════ -->
   <nav class="nav-rail">
     <div class="nav-logo-row">
-      <div class="nav-logo">C</div>
-      <span class="nav-logo-label">Algorithms II</span>
+      <div class="nav-logo">
+        <img src="../img/Canadian_University_Dubai_Logo.png" alt="CUD"
+             style="width:36px;height:36px;object-fit:contain;display:block;" />
+      </div>
+      <span class="nav-logo-label">Canadian University Dubai</span>
     </div>
+    <div class="nav-sep"></div>
     <div class="nav-item" data-part="1">
       <div class="nav-icon">⬡</div>
       <span class="nav-label">Matrix Chain</span>
@@ -1038,7 +1048,7 @@
 
     <section class="viz-hero" id="p1-vizHero">
       <div class="viz-hero__title-block">
-        <span class="viz-hero__badge">CLO-1</span>
+        <span class="viz-hero__badge">Part 1</span>
         <h1 class="viz-hero__title">Matrix Chain</h1>
         <span class="viz-hero__subtitle">Dynamic Programming</span>
       </div>
@@ -1059,10 +1069,6 @@
           <!-- Left: scratch pad (75%) -->
           <div class="p1-scratchpad" id="p1-scratchpad">
             <div id="p1-overlay" class="p1-ov" style="display:none;"></div>
-            <div id="p1-scratchHeading" class="p1-scratch-heading" style="display:none;">
-              <span class="p1-scratch-heading__title">Recurrence</span>
-              <span class="p1-scratch-heading__sub" id="p1-scratchSub"></span>
-            </div>
             <div id="p1-workChain" class="p1-work-chain" style="display:none;"></div>
           </div>
           <!-- Right: ledger (25%) -->
@@ -1092,6 +1098,9 @@
 
         <div class="pill-divider"></div>
 
+        <button class="pill-btn" id="p1-btnBack" disabled>
+          <span class="pill-btn-icon">←</span>
+        </button>
         <button class="pill-btn" id="p1-btnStep" disabled>
           <span class="pill-btn-icon">→</span> Step
         </button>
@@ -1339,7 +1348,7 @@
 
     <section class="viz-hero" id="p2-vizHero">
       <div class="viz-hero__title-block">
-        <span class="viz-hero__badge">CLO-2</span>
+        <span class="viz-hero__badge">Part 2</span>
         <h1 class="viz-hero__title">Parallel Merge Sort</h1>
         <span class="viz-hero__subtitle">Fork-Join Parallel Sorting</span>
       </div>
@@ -1378,6 +1387,9 @@
 
         <div class="pill-divider"></div>
 
+        <button class="pill-btn" id="p2-btnBack" disabled>
+          <span class="pill-btn-icon">←</span>
+        </button>
         <button class="pill-btn" id="p2-btnStep" disabled>
           <span class="pill-btn-icon">→</span> Step
         </button>
@@ -1727,7 +1739,7 @@
 
     <section class="viz-hero" id="p3-vizHero">
       <div class="viz-hero__title-block">
-        <span class="viz-hero__badge">CLO-3</span>
+        <span class="viz-hero__badge">Part 3</span>
         <h1 class="viz-hero__title">Extended Euclidean</h1>
         <span class="viz-hero__subtitle">Algorithm &amp; Modular Inverse</span>
       </div>
@@ -1759,6 +1771,9 @@
 
         <div class="pill-divider"></div>
 
+        <button class="pill-btn" id="p3-btnBack" disabled>
+          <span class="pill-btn-icon">←</span>
+        </button>
         <button class="pill-btn" id="p3-btnStep" disabled>
           <span class="pill-btn-icon">→</span> Step
         </button>
@@ -2297,9 +2312,6 @@
         ov.style.display = 'flex';
         ov.offsetHeight; // force reflow
         ov.classList.add('visible');
-        // Heading belongs to the work-chain, not the overlay
-        const h = document.getElementById('p1-scratchHeading');
-        if (h) h.style.display = 'none';
       }
       function hideOv() {
         const ov = document.getElementById('p1-overlay');
@@ -2318,14 +2330,12 @@
         chain.innerHTML = '';
         chain.style.display = '';
 
-        // Show heading and update subtitle with current subproblem
-        const curSt = state.steps[upToIdx];
-        const heading = document.getElementById('p1-scratchHeading');
-        const sub     = document.getElementById('p1-scratchSub');
-        if (heading) heading.style.display = '';
-        if (sub && curSt) {
-          sub.textContent = `m[${curSt.i}][${curSt.j}]  ·  k = ${curSt.k}`;
-        }
+        // Top-level section label — mirrors CLO-3 first bc-header style
+        const topHdr = document.createElement('div');
+        topHdr.className = 'p1-wc-header';
+        topHdr.style.cssText = 'border-top:none; margin-top:0; padding-top:0;';
+        topHdr.textContent = 'Recurrence';
+        chain.appendChild(topHdr);
 
         const p   = state.p;
         const fmt = v => v === Infinity ? '∞' : v.toLocaleString();
@@ -2850,10 +2860,22 @@
       function step() {
         if (state.isPlaying || state.currentStep >= state.steps.length - 1) return;
         renderStep(++state.currentStep);
+        document.getElementById('p1-btnBack').disabled = false;
         if (state.currentStep >= state.steps.length - 1) {
           updateStatus('done');
           document.getElementById('p1-btnStep').disabled = true;
           document.getElementById('p1-btnPlay').disabled = true;
+        }
+      }
+
+      function stepBack() {
+        if (state.isPlaying || state.currentStep <= 0) return;
+        renderStep(--state.currentStep);
+        document.getElementById('p1-btnStep').disabled = false;
+        document.getElementById('p1-btnPlay').disabled = false;
+        if (state.currentStep <= 0) {
+          updateStatus('ready');
+          document.getElementById('p1-btnBack').disabled = true;
         }
       }
 
@@ -2886,7 +2908,7 @@
         for (let ln = 1; ln <= 10; ln++)
           document.getElementById(`p1-pline-${ln}`)?.classList.remove('active');
         updateStatus('idle');
-        ['p1-btnStep','p1-btnPlay','p1-btnPause','p1-btnReset'].forEach(id =>
+        ['p1-btnBack','p1-btnStep','p1-btnPlay','p1-btnPause','p1-btnReset'].forEach(id =>
           document.getElementById(id).disabled = true);
       }
 
@@ -2901,6 +2923,7 @@
           document.getElementById('p1-inputError').textContent = '';
         });
         document.getElementById('p1-btnBuild').addEventListener('click', buildSteps);
+        document.getElementById('p1-btnBack').addEventListener('click', stepBack);
         document.getElementById('p1-btnStep').addEventListener('click', step);
         document.getElementById('p1-btnPlay').addEventListener('click', play);
         document.getElementById('p1-btnPause').addEventListener('click', pause);
@@ -3348,7 +3371,7 @@
           const y = pi * ROW_H;
           svg.appendChild($svg('rect', {
             x: PAD_L, y, width: usableW, height: ROW_H,
-            fill: pi % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+            fill: pi % 2 === 0 ? 'var(--bg-elevated)' : 'transparent', opacity: '0.5',
           }));
           const lbl = $svg('text', {
             x: PAD_L - 4, y: y + ROW_H / 2 + 3.5,
@@ -3413,7 +3436,7 @@
           svg.appendChild($svg('rect', {
             x: PAD_L + steps[currentIdx].parallelTime * COL_W, y: 0,
             width: COL_W, height: usableH,
-            fill: 'rgba(255,255,255,0.035)', 'pointer-events': 'none',
+            fill: 'var(--bg-elevated)', opacity: '0.18', 'pointer-events': 'none',
           }));
         }
       }
@@ -3546,10 +3569,22 @@
       function step() {
         if (state.isPlaying || state.currentStep >= state.steps.length - 1) return;
         renderStep(++state.currentStep);
+        document.getElementById('p2-btnBack').disabled = false;
         if (state.currentStep >= state.steps.length - 1) {
           updateStatus('done');
           document.getElementById('p2-btnStep').disabled = true;
           document.getElementById('p2-btnPlay').disabled = true;
+        }
+      }
+
+      function stepBack() {
+        if (state.isPlaying || state.currentStep <= 0) return;
+        renderStep(--state.currentStep);
+        document.getElementById('p2-btnStep').disabled = false;
+        document.getElementById('p2-btnPlay').disabled = false;
+        if (state.currentStep <= 0) {
+          updateStatus('ready');
+          document.getElementById('p2-btnBack').disabled = true;
         }
       }
 
@@ -3576,7 +3611,7 @@
           const el = document.getElementById(`p2-pline-${ln}`);
           if (el) el.classList.remove('active');
         }
-        ['p2-btnStep','p2-btnPlay','p2-btnPause','p2-btnReset'].forEach(id =>
+        ['p2-btnBack','p2-btnStep','p2-btnPlay','p2-btnPause','p2-btnReset'].forEach(id =>
           (document.getElementById(id).disabled = true));
         updateStatus('idle');
       }
@@ -3603,6 +3638,7 @@
         });
 
         document.getElementById('p2-btnBuild').addEventListener('click', buildSteps);
+        document.getElementById('p2-btnBack').addEventListener('click', stepBack);
         document.getElementById('p2-btnStep').addEventListener('click', step);
         document.getElementById('p2-btnPlay').addEventListener('click', play);
         document.getElementById('p2-btnPause').addEventListener('click', pause);
@@ -4246,10 +4282,22 @@
       function step() {
         if (state.isPlaying || state.currentStep >= state.steps.length - 1) return;
         renderStep(++state.currentStep);
+        document.getElementById('p3-btnBack').disabled = false;
         if (state.currentStep >= state.steps.length - 1) {
           updateStatus('done');
           document.getElementById('p3-btnStep').disabled = true;
           document.getElementById('p3-btnPlay').disabled = true;
+        }
+      }
+
+      function stepBack() {
+        if (state.isPlaying || state.currentStep <= 0) return;
+        renderStep(--state.currentStep);
+        document.getElementById('p3-btnStep').disabled = false;
+        document.getElementById('p3-btnPlay').disabled = false;
+        if (state.currentStep <= 0) {
+          updateStatus('ready');
+          document.getElementById('p3-btnBack').disabled = true;
         }
       }
 
@@ -4284,7 +4332,7 @@
           document.getElementById(`p3-pline-${ln}`)?.classList.remove('active');
         setMode(false);
         updateStatus('idle');
-        ['p3-btnStep','p3-btnPlay','p3-btnPause','p3-btnReset'].forEach(id =>
+        ['p3-btnBack','p3-btnStep','p3-btnPlay','p3-btnPause','p3-btnReset'].forEach(id =>
           document.getElementById(id).disabled = true
         );
       }
@@ -4297,6 +4345,7 @@
           state.speed = +this.value;
         });
         document.getElementById('p3-btnBuild').addEventListener('click', buildSteps);
+        document.getElementById('p3-btnBack').addEventListener('click', stepBack);
         document.getElementById('p3-btnStep').addEventListener('click', step);
         document.getElementById('p3-btnPlay').addEventListener('click', play);
         document.getElementById('p3-btnPause').addEventListener('click', pause);

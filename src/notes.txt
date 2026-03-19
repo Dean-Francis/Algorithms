@@ -25,4 +25,4 @@ All
 - Remove CLO's from the title 
 - Add a play back method
 - Add CUD Logo
-- Optional Fix Light mode or remove it
+- Optional Fix Light mode, some areas are not visible when i go to light mode
