@@ -2461,7 +2461,10 @@
               phase: 'split', activeNodeIds: nonLeaves.map(n => n.id),
               pseudoLine: d === 0 ? 3 : 4,
               explanation: `t=${pt}: <strong>${nonLeaves.length}</strong> subarray(s) split in parallel at depth&nbsp;${d}. Mid computed, left and right halves <b>spawned</b> concurrently.${leafNote}`,
-              ganttOps: nonLeaves.map(n => ({ nodeId: n.id, taskType: 'split' })),
+              ganttOps: [
+                ...nonLeaves.map(n => ({ nodeId: n.id, taskType: 'split' })),
+                ...leavesHere.map(n => ({ nodeId: n.id, taskType: 'base' })),
+              ],
             }));
           } else {
             // all base cases
