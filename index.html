@@ -729,6 +729,19 @@
       color: #90CAF9;
     }
     .p3-ov__sep { width: 56px; height: 1px; background: var(--border); }
+    .p3-ov__no-inverse {
+      font-family: var(--font-mono);
+      font-size: clamp(0.85rem, 1.8vw, 1.2rem);
+      color: var(--accent); opacity: 0.85;
+    }
+    @keyframes p3Shake {
+      0%, 100% { transform: translateX(0); }
+      20%       { transform: translateX(-8px); }
+      40%       { transform: translateX( 8px); }
+      60%       { transform: translateX(-5px); }
+      80%       { transform: translateX( 3px); }
+    }
+    .p3-ov__body--error { animation: p3Shake 0.45s var(--ease); }
 
     .p3-back-chain {
       position: absolute; inset: 0; z-index: 3;
@@ -1913,8 +1926,8 @@
               <button class="preset-btn" onclick="loadPreset(3,252,198)">252, 198</button>
               <button class="preset-btn" onclick="p3LoadAndPlay(144,89)"
                       title="Fibonacci — worst case (Lamé's theorem)">⚠ Fibonacci</button>
-              <button class="preset-btn" onclick="p3LoadRSA(3,26)"
-                      title="RSA: find private key d = e⁻¹ mod φ(n)">RSA-style</button>
+              <button class="preset-btn" onclick="p3ModInverse()"
+                      title="Compute a⁻¹ mod n using the values above">a⁻¹ mod n</button>
             </div>
           </div>
         </div>
@@ -2108,7 +2121,6 @@
       } else if (part === 3) {
         document.getElementById('p3-inputA').value = args[0];
         document.getElementById('p3-inputB').value = args[1];
-        if (window.p3ResetMode) window.p3ResetMode();
       }
     }
 
@@ -3664,13 +3676,6 @@
         status: 'idle', playTimer: null,
       };
       let ovHideTimer = null;
-      let rsaMode = false;
-
-      function setMode(isRsa) {
-        rsaMode = isRsa;
-        document.getElementById('p3-labelA').textContent = isRsa ? 'e  (public exponent)' : 'Value a';
-        document.getElementById('p3-labelB').textContent = isRsa ? 'φ(n)  (totient)'       : 'Modulus n';
-      }
 
       // ── Core algorithm ────────────────────────────
       function computeData(a, b) {
@@ -3807,19 +3812,13 @@
         const inverse = gcd === 1 ? ((finalX % b + b) % b) : null;
         const bsData  = computeBackSubDisplay(forward, gcd, a, b);
 
-        // Display names: use RSA terminology when in RSA mode
-        const dA = rsaMode ? 'e'    : `${a}`;
-        const dB = rsaMode ? 'φ(n)' : `${b}`;
-
         state.steps = [];
 
         // Step 0 — intro
         state.steps.push({
           phase: 'intro', a, b,
           line: null,
-          explanation: rsaMode
-            ? `Computing <strong>gcd(e, φ(n)) = gcd(${a}, ${b})</strong> to find Bézout coefficients — needed to derive the <strong>private key d = e⁻¹ mod φ(n)</strong>.`
-            : `Computing <strong>gcd(${a}, ${b})</strong> and Bézout coefficients x, y such that ${a}·x + ${b}·y = gcd.`
+          explanation: `Computing <strong>gcd(${a}, ${b})</strong> and Bézout coefficients x, y such that ${a}·x + ${b}·y = gcd.`
         });
 
         // Forward / pivot steps
@@ -3831,12 +3830,8 @@
             eq:   `${f.a} = ${f.q}·${f.b} + ${f.r}`,
             line: i === 0 ? 1 : 5,
             explanation: isPivot
-              ? `Remainder is <strong>0</strong> → gcd(${dA}, ${dB}) = <span class="mono">${gcd}</span>. Back-substitution will express gcd in terms of ${dA} and ${dB}.`
-              : i === 0
-                ? rsaMode
-                  ? `<strong>extGCD(e, φ(n)):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
-                  : `<strong>extGCD(${f.a}, ${f.b}):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
-                : `<strong>extGCD(${f.a}, ${f.b}):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
+              ? `Remainder is <strong>0</strong> → gcd(${a}, ${b}) = <span class="mono">${gcd}</span>. Back-substitution will express gcd in terms of ${a} and ${b}.`
+              : `<strong>extGCD(${f.a}, ${f.b}):</strong> ${f.a} = ${f.q}·${f.b} + ${f.r}. Recurse with (${f.b}, ${f.r}).`
           });
         });
 
@@ -3852,7 +3847,7 @@
             const fi = forward[gcdIdx2];
             state.steps.push({ ...base, subStep: 'single', line: 6,
               explanation: `We now work <strong>backwards</strong> to express `
-                + `gcd(${dA}, ${dB}) = ${gcd} as a linear combination <em>${dA}·x + ${dB}·y = ${gcd}</em>. `
+                + `gcd(${a}, ${b}) = ${gcd} as a linear combination <em>${a}·x + ${b}·y = ${gcd}</em>. `
                 + `From step ${gcdIdx2 + 1}: ${fi.a} = ${fi.q}·${fi.b} + ${gcd}, `
                 + `so we isolate <strong>${gcd} = ${fi.a} − ${fi.q}·${fi.b}</strong>.`
             });
@@ -3878,13 +3873,11 @@
             state.steps.push({ ...base, subStep: 'simplify', line: isLast ? 8 : 7,
               explanation: isLast
                 ? `<strong>Final substitution complete.</strong> Collect like terms — `
-                  + `we've expressed gcd(${dA}, ${dB}) = ${gcd} entirely in terms of ${dA} and ${dB}: `
-                  + `<span class="mono">${dA}·(${finalX}) + ${dB}·(${finalY}) = ${gcd}</span>. `
-                  + (rsaMode
-                      ? `These are the Bézout coefficients — <strong>x = ${finalX}</strong> will become the private key d.`
-                      : `These are the Bézout coefficients used for modular inverses.`)
-                : `Collect like terms — group all multiples of <span class="mono">${dA}</span> `
-                  + `and <span class="mono">${dB}</span> separately. `
+                  + `we've expressed gcd(${a}, ${b}) = ${gcd} entirely in terms of ${a} and ${b}: `
+                  + `<span class="mono">${a}·(${finalX}) + ${b}·(${finalY}) = ${gcd}</span>. `
+                  + `These are the Bézout coefficients used for modular inverses.`
+                : `Collect like terms — group all multiples of <span class="mono">${a}</span> `
+                  + `and <span class="mono">${b}</span> separately. `
                   + `This simplifies the expression one step closer to the original inputs.`
             });
           }
@@ -3896,41 +3889,44 @@
         // Result step
         state.steps.push({
           phase: 'result', a, b, gcd, x: finalX, y: finalY, inverse, line: 8,
-          explanation: rsaMode
-            ? `<strong>Bézout's Identity:</strong> e·${finalX} + φ(n)·${finalY} = ${gcd}.`
-              + (gcd === 1
-                ? ` Since gcd(e, φ(n)) = 1, the private key d exists. Press <strong>Continue</strong> to compute d = e⁻¹ mod φ(n).`
-                : ` Since gcd(e, φ(n)) ≠ 1, no private key exists — choose a different e.`)
-              + complexitySuffix
-            : `<strong>Bézout's Identity:</strong> ${a}·${finalX} + ${b}·${finalY} = ${gcd}.`
-              + (gcd === 1
-                ? ` Since gcd = 1, a modular inverse exists. Press <strong>Continue</strong> to compute ${a}⁻¹ mod ${b}.`
-                : ` Since gcd ≠ 1, no modular inverse exists for these values.`)
-              + complexitySuffix
+          explanation: `<strong>Bézout's Identity:</strong> ${a}·${finalX} + ${b}·${finalY} = ${gcd}.`
+            + (gcd === 1
+              ? ` Since gcd = 1, a modular inverse exists. Press <strong>Continue</strong> to compute ${a}⁻¹ mod ${b}.`
+              : ` Since gcd ≠ 1, no modular inverse exists for these values.`)
+            + complexitySuffix
         });
-        // Modular inverse step (only when gcd = 1)
+        // Modular inverse steps (only when gcd = 1)
         if (gcd === 1) {
           const fmtX = finalX < 0 ? `(${finalX})` : `${finalX}`;
           const fmtY = finalY < 0 ? `(${finalY})` : `${finalY}`;
-          const invLine = rsaMode
-            ? `d  =  e⁻¹ mod φ(n)  =  ${fmtX} mod ${b}  =  ${inverse}`
-            : `${a}⁻¹ mod ${b}  =  ${fmtX} mod ${b}  =  ${inverse}`;
-          const invExplanation = rsaMode
-            ? `<strong>Private Key d:</strong><br>`
-              + `From Bézout: <span class="mono">e·${fmtX} + φ(n)·${fmtY} = 1</span>  →  <span class="mono">${a}·${fmtX} + ${b}·${fmtY} = 1</span><br>`
-              + `Taking both sides mod φ(n): <span class="mono">e·${fmtX} ≡ 1 (mod φ(n))</span><br>`
-              + `Therefore <span class="mono">d = e⁻¹ mod φ(n) = ${fmtX} mod ${b} = <strong>${inverse}</strong></span><br>`
-              + `In RSA: d is the <strong>private key</strong> — the decryption exponent.`
-              + complexitySuffix
-            : `<strong>Modular Inverse:</strong><br>`
-              + `From Bézout: <span class="mono">${a}·${fmtX} + ${b}·${fmtY} = 1</span><br>`
-              + `Taking both sides mod ${b}: <span class="mono">${a}·${fmtX} ≡ 1 (mod ${b})</span><br>`
-              + `Therefore <span class="mono">${a}⁻¹ mod ${b} = ${fmtX} mod ${b} = <strong>${inverse}</strong></span>`
-              + complexitySuffix;
+          const invLine = `${a}⁻¹ mod ${b}  =  ${fmtX} mod ${b}  =  ${inverse}`;
+          // Step 1 — take mod n both sides (overlay)
           state.steps.push({
-            phase: 'mod-inverse', a, b, x: finalX, y: finalY, inverse, line: 10,
-            invLine, explanation: invExplanation
+            phase: 'mod-link', a, b, x: finalX, y: finalY, inverse, fmtX, fmtY, line: 9,
+            explanation: `<strong>Taking mod ${b} both sides:</strong><br>`
+              + `From Bézout: <span class="mono">${a}·${fmtX} + ${b}·${fmtY} = 1</span><br>`
+              + `Since ${b}·${fmtY} ≡ 0 (mod ${b}): <span class="mono">${a}·${fmtX} ≡ 1 (mod ${b})</span>`
           });
+          // Step 2 — conclude inverse (overlay)
+          state.steps.push({
+            phase: 'mod-inverse', a, b, x: finalX, y: finalY, inverse, fmtX, fmtY, line: 10,
+            invLine,
+            explanation: `<strong>Modular Inverse:</strong><br>`
+              + `Therefore <span class="mono">${a}⁻¹ ≡ ${fmtX} (mod ${b})</span><br>`
+              + `<span class="mono">${a}⁻¹ mod ${b} = ${fmtX} mod ${b} = <strong>${inverse}</strong></span>`
+              + complexitySuffix
+          });
+          // Step 3 — reduce mod n when x is negative (chain)
+          if (finalX < 0) {
+            state.steps.push({
+              phase: 'reduce-mod', a, b, x: finalX, y: finalY, inverse, fmtX, fmtY, line: 10,
+              invLine,
+              explanation: `<strong>Making the inverse positive:</strong><br>`
+                + `x = ${finalX} is negative — add n = ${b} repeatedly until the result is in [0, ${b}).<br>`
+                + `Result: ${a}⁻¹ mod ${b} = <strong>${inverse}</strong>`
+                + complexitySuffix
+            });
+          }
         }
 
         // Stats
@@ -3971,22 +3967,24 @@
         bc.innerHTML  = '';
         const curStep = state.steps[stepIdx];
         const inBS    = curStep.phase === 'backsub';
+        const inML    = curStep.phase === 'mod-link';
         const inMI    = curStep.phase === 'mod-inverse';
+        const inRed   = curStep.phase === 'reduce-mod';
 
         // Euclidean Algorithm header (first item, no border-top)
         const fwdHdr = document.createElement('div');
         fwdHdr.className = 'p3-bc-header';
         fwdHdr.style.cssText = 'border-top:none; margin-top:0; padding-top:0;';
-        fwdHdr.textContent = rsaMode ? 'Euclidean Algorithm  (e, φ(n))' : 'Euclidean Algorithm';
+        fwdHdr.textContent = 'Euclidean Algorithm';
         bc.appendChild(fwdHdr);
 
         // Forward / pivot lines
         for (let i = 0; i < state.steps.length; i++) {
           const s = state.steps[i];
           if (s.phase !== 'forward' && s.phase !== 'pivot') continue;
-          if (!inBS && !inMI && i > stepIdx) break;
+          if (!inBS && !inML && !inMI && !inRed && i > stepIdx) break;
 
-          const isCur = !inBS && !inMI && i === stepIdx;
+          const isCur = !inBS && !inML && !inMI && !inRed && i === stepIdx;
           const div   = document.createElement('div');
           div.className = 'p3-bc-line' + (isCur ? ' cur' : ' seen');
           div.textContent = s.eq;
@@ -3994,12 +3992,10 @@
         }
 
         // GCD result summary + Back-sub section
-        if (inBS || inMI) {
+        if (inBS || inML || inMI || inRed) {
           const srcA   = curStep.a;
           const srcB   = curStep.b;
-          const srcGcd = inMI ? 1 : curStep.gcd;
-          const dispA  = rsaMode ? 'e'    : `${srcA}`;
-          const dispB  = rsaMode ? 'φ(n)' : `${srcB}`;
+          const srcGcd = (inML || inMI) ? 1 : curStep.gcd;
 
           // GCD result summary
           const gcdHdr = document.createElement('div');
@@ -4008,9 +4004,7 @@
           bc.appendChild(gcdHdr);
           const gcdLine = document.createElement('div');
           gcdLine.className   = 'p3-bc-line seen';
-          gcdLine.textContent = rsaMode
-            ? `gcd(e, φ(n))  =  gcd(${srcA}, ${srcB})  =  ${srcGcd}`
-            : `gcd(${srcA}, ${srcB}) = ${srcGcd}`;
+          gcdLine.textContent = `gcd(${srcA}, ${srcB}) = ${srcGcd}`;
           bc.appendChild(gcdLine);
 
           // Back-Substitution header
@@ -4022,7 +4016,7 @@
           const bsStep = state.steps.find(s => s.phase === 'backsub');
           if (bsStep) {
             const { bsLines, stepRanges } = bsStep;
-            if (inMI) {
+            if (inML || inMI || inRed) {
               const lastEnd = stepRanges[stepRanges.length - 1].end;
               bsLines.forEach((line, li) => {
                 if (li > lastEnd) return;
@@ -4055,7 +4049,7 @@
         }
 
         // Bézout summary + Modular inverse section
-        if (inMI) {
+        if (inML || inMI || inRed) {
           const { a, b, x, y } = curStep;
 
           // Bézout identity summary
@@ -4065,17 +4059,11 @@
           bc.appendChild(bezHdr);
 
           const fmtC = v => v < 0 ? `(${v})` : `${v}`;
-          const bezLines = rsaMode
-            ? [
-                `e·${fmtC(x)} + φ(n)·${fmtC(y)} = 1`,
-                `d = ${x}   →   private key  (keep)`,
-                `y = ${y}   →   coefficient of φ(n)  (discard)`
-              ]
-            : [
-                `${a}·${fmtC(x)} + ${b}·${fmtC(y)} = 1`,
-                `x = ${x}   →   coefficient of ${a}`,
-                `y = ${y}   →   coefficient of ${b}`
-              ];
+          const bezLines = [
+            `${a}·${fmtC(x)} + ${b}·${fmtC(y)} = 1`,
+            `x = ${x}   →   coefficient of ${a}`,
+            `y = ${y}   →   coefficient of ${b}`
+          ];
           bezLines.forEach(text => {
             const d = document.createElement('div');
             d.className   = 'p3-bc-line seen';
@@ -4083,15 +4071,96 @@
             bc.appendChild(d);
           });
 
-          // Modular Inverse header + answer
+          // Modular Inverse derivation chain (revealed step by step)
           const hdr2 = document.createElement('div');
           hdr2.className   = 'p3-bc-header';
-          hdr2.textContent = rsaMode ? 'RSA Private Key' : 'Modular Inverse';
+          hdr2.textContent = 'Modular Inverse';
           bc.appendChild(hdr2);
-          const div = document.createElement('div');
-          div.className   = 'p3-bc-line cur';
-          div.textContent = curStep.invLine;
-          bc.appendChild(div);
+
+          // derivLines[0] = Bézout        (seen in mod-link, seen in mod-inverse/reduce-mod)
+          // derivLines[1] = congruence     (cur in mod-link, seen after)
+          // derivLines[2] = inverse defn   (cur in mod-inverse, seen in reduce-mod)
+          const derivLines = [
+            `${a}·${fmtC(x)} + ${b}·${fmtC(y)} = 1`,
+            `${a}·${fmtC(x)} ≡ 1  (mod ${b})`,
+            `${a}⁻¹ ≡ ${fmtC(x)}  (mod ${b})`,
+          ];
+          // How many derivation lines to show and which is current
+          let maxDeriv, curDeriv;
+          if (inML)       { maxDeriv = 1; curDeriv = 1; }
+          else if (inMI)  { maxDeriv = 2; curDeriv = 2; }
+          else             { maxDeriv = 2; curDeriv = -1; } // inRed: all seen
+
+          derivLines.forEach((text, di) => {
+            if (di > maxDeriv) return;
+            const d = document.createElement('div');
+            d.className   = 'p3-bc-line' + (di === curDeriv ? ' cur' : ' seen');
+            d.textContent = text;
+            bc.appendChild(d);
+          });
+
+          // Note line (only during mod-link: explains why b·y term drops)
+          if (inML) {
+            const note = document.createElement('div');
+            note.className = 'p3-bc-line seen';
+            note.style.cssText = 'opacity:0.5; font-style:italic;';
+            note.textContent = `(since ${b}·${fmtC(y)} ≡ 0  mod ${b})`;
+            bc.appendChild(note);
+          }
+
+          // Answer line: cur in mod-inverse, seen in reduce-mod
+          if (inMI || inRed) {
+            const invDiv = document.createElement('div');
+            invDiv.className   = inMI ? 'p3-bc-line cur' : 'p3-bc-line seen';
+            invDiv.textContent = curStep.invLine;
+            bc.appendChild(invDiv);
+          }
+
+          // Reducing mod n — only in reduce-mod phase
+          if (inRed) {
+            const hdr3 = document.createElement('div');
+            hdr3.className   = 'p3-bc-header';
+            hdr3.textContent = 'Reducing mod n';
+            bc.appendChild(hdr3);
+
+            // Build all addition steps
+            const addSteps = [];
+            let val = x;
+            while (val < 0) { val += b; addSteps.push(val); }
+
+            const MAX = 10;
+
+            if (addSteps.length <= MAX) {
+              // Show every step
+              for (let k = 0; k < addSteps.length; k++) {
+                const from   = k === 0 ? x : addSteps[k - 1];
+                const isLast = k === addSteps.length - 1;
+                const d = document.createElement('div');
+                d.className   = 'p3-bc-line' + (isLast ? ' cur' : ' seen');
+                d.textContent = `${from} + ${b} = ${addSteps[k]}${isLast ? '  ✓' : ''}`;
+                bc.appendChild(d);
+              }
+            } else {
+              // Show first MAX-1 steps, collapse middle, always surface final
+              for (let k = 0; k < MAX - 1; k++) {
+                const from = k === 0 ? x : addSteps[k - 1];
+                const d = document.createElement('div');
+                d.className   = 'p3-bc-line seen';
+                d.textContent = `${from} + ${b} = ${addSteps[k]}`;
+                bc.appendChild(d);
+              }
+              const hidden = addSteps.length - MAX;
+              const ellipsis = document.createElement('div');
+              ellipsis.className = 'p3-bc-line seen';
+              ellipsis.style.cssText = 'opacity:0.4; font-style:italic;';
+              ellipsis.textContent = `  … ${hidden} more addition${hidden !== 1 ? 's' : ''} …`;
+              bc.appendChild(ellipsis);
+              const finalD = document.createElement('div');
+              finalD.className   = 'p3-bc-line cur';
+              finalD.textContent = `${addSteps[addSteps.length - 2]} + ${b} = ${addSteps[addSteps.length - 1]}  ✓`;
+              bc.appendChild(finalD);
+            }
+          }
         }
 
         bc.scrollTop = bc.scrollHeight;
@@ -4132,14 +4201,7 @@
           svg.style.display    = 'none';
           bc.style.display     = 'none';
           contBn.style.display = 'none';
-          showOv(rsaMode ? `
-            <div class="p3-ov__label">RSA Key Generation</div>
-            <div class="p3-ov__eq-xl">gcd(e, φ(n))</div>
-            <div class="p3-ov__eq-md" style="opacity:0.6">= gcd(${s.a}, ${s.b})</div>
-            <div class="p3-ov__sep"></div>
-            <div class="p3-ov__label">Find  d = e⁻¹ mod φ(n)</div>
-            <div class="p3-ov__label" style="margin-top:4px;">Press Step or Play to begin</div>
-          ` : `
+          showOv(`
             <div class="p3-ov__label">Extended Euclidean Algorithm</div>
             <div class="p3-ov__eq-xl">gcd(${s.a}, ${s.b})</div>
             <div class="p3-ov__sep"></div>
@@ -4158,13 +4220,7 @@
           bc.style.display     = '';
           contBn.style.display = 'none';
           drawChain(i);
-          showOv(rsaMode ? `
-            <div class="p3-ov__label">Remainder = 0</div>
-            <div class="p3-ov__eq-lg">${s.a} = ${s.q}·${s.b} + 0</div>
-            <div class="p3-ov__sep"></div>
-            <div class="p3-ov__gcd">gcd(e, φ(n)) = ${s.gcd}</div>
-            <div class="p3-ov__label" style="margin-top:4px;">Back-substitution begins →</div>
-          ` : `
+          showOv(`
             <div class="p3-ov__label">Remainder = 0</div>
             <div class="p3-ov__eq-lg">${s.a} = ${s.q}·${s.b} + 0</div>
             <div class="p3-ov__sep"></div>
@@ -4182,23 +4238,50 @@
         } else if (s.phase === 'result') {
           svg.style.display = 'none';
           bc.style.display  = 'none';
-          document.getElementById('p3-continueBtn').style.display = s.inverse !== null ? '' : 'none';
-          showOv(rsaMode ? `
-            <div class="p3-ov__label">RSA Result</div>
-            <div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.5rem)">gcd(e, φ(n)) = ${s.gcd}</div>
-            <div class="p3-ov__eq-md">d = ${s.x}   <span style="opacity:0.5">(private key coefficient)</span></div>
-            <div class="p3-ov__eq-md">y = ${s.y}   <span style="opacity:0.5">(discarded)</span></div>
-            <div class="p3-ov__sep"></div>
-            <div class="p3-ov__eq-md">e·${s.x < 0 ? `(${s.x})` : s.x} + φ(n)·${s.y < 0 ? `(${s.y})` : s.y} = ${s.gcd}</div>
-          ` : `
-            <div class="p3-ov__label">Result</div>
-            <div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.5rem)">gcd(${s.a}, ${s.b}) = ${s.gcd}</div>
-            <div class="p3-ov__eq-md">x = ${s.x}</div>
-            <div class="p3-ov__eq-md">y = ${s.y}</div>
-            <div class="p3-ov__sep"></div>
-            <div class="p3-ov__eq-md">${fmtBezout(s.a, s.x, s.b, s.y, s.gcd)}</div>
-          `);
+          if (s.inverse !== null) {
+            const btn = document.getElementById('p3-continueBtn');
+            btn.textContent   = 'Continue → Modular Inverse';
+            btn.style.display = '';
+          } else {
+            document.getElementById('p3-continueBtn').style.display = 'none';
+          }
+          if (s.inverse !== null) {
+            showOv(`
+              <div class="p3-ov__label">Result</div>
+              <div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.5rem)">gcd(${s.a}, ${s.b}) = ${s.gcd}</div>
+              <div class="p3-ov__eq-md">x = ${s.x}</div>
+              <div class="p3-ov__eq-md">y = ${s.y}</div>
+              <div class="p3-ov__sep"></div>
+              <div class="p3-ov__eq-md">${fmtBezout(s.a, s.x, s.b, s.y, s.gcd)}</div>
+            `);
+          } else {
+            showOv(`
+              <div class="p3-ov__label" style="color:var(--accent);">No Inverse Exists</div>
+              <div class="p3-ov__eq-xl" style="font-size:clamp(2rem,4vw,3.5rem);">gcd(${s.a}, ${s.b}) = ${s.gcd}</div>
+              <div class="p3-ov__sep" style="background:var(--accent);opacity:0.4;"></div>
+              <div class="p3-ov__no-inverse">${s.a}⁻¹ mod ${s.b} is undefined</div>
+              <div class="p3-ov__label" style="margin-top:4px;">gcd(a, n) must equal 1 for an inverse to exist</div>
+            `);
+            document.getElementById('p3-overlay').querySelector('.p3-ov__body').classList.add('p3-ov__body--error');
+          }
+        } else if (s.phase === 'mod-link') {
+          hideOv();
+          svg.style.display    = 'none';
+          bc.style.display     = '';
+          contBn.style.display = 'none';
+          drawChain(i);
+
         } else if (s.phase === 'mod-inverse') {
+          hideOv();
+          svg.style.display    = 'none';
+          bc.style.display     = '';
+          const hasReduce = i + 1 < state.steps.length && state.steps[i + 1].phase === 'reduce-mod';
+          const btn = document.getElementById('p3-continueBtn');
+          btn.textContent   = 'Continue → Reduce mod n';
+          btn.style.display = hasReduce ? '' : 'none';
+          drawChain(i);
+
+        } else if (s.phase === 'reduce-mod') {
           svg.style.display = 'none';
           bc.style.display  = '';
           document.getElementById('p3-continueBtn').style.display = 'none';
@@ -4330,7 +4413,6 @@
           + 'font-family:var(--font-ui);">No steps yet</td></tr>';
         for (let ln = 1; ln <= 10; ln++)
           document.getElementById(`p3-pline-${ln}`)?.classList.remove('active');
-        setMode(false);
         updateStatus('idle');
         ['p3-btnBack','p3-btnStep','p3-btnPlay','p3-btnPause','p3-btnReset'].forEach(id =>
           document.getElementById(id).disabled = true
@@ -4350,30 +4432,28 @@
         document.getElementById('p3-btnPlay').addEventListener('click', play);
         document.getElementById('p3-btnPause').addEventListener('click', pause);
         document.getElementById('p3-btnReset').addEventListener('click', reset);
-        document.getElementById('p3-continueBtn').textContent = 'Continue → Modular Inverse';
         document.getElementById('p3-continueBtn').addEventListener('click', () => {
-          renderStep(state.currentStep + 1);
-          updateStatus('done');
-          document.getElementById('p3-btnStep').disabled = true;
-          document.getElementById('p3-btnPlay').disabled = true;
+          const nextIdx = state.currentStep + 1;
+          renderStep(nextIdx);
+          if (nextIdx >= state.steps.length - 1) {
+            updateStatus('done');
+            document.getElementById('p3-btnStep').disabled = true;
+            document.getElementById('p3-btnPlay').disabled = true;
+          }
         });
         window.addEventListener('resize', () => {
           // chain div is CSS-based, nothing to redraw on resize
         });
         window.p3Step = step;
         window.p3LoadAndPlay = function(a, b) {
-          setMode(false);
           document.getElementById('p3-inputA').value = a;
           document.getElementById('p3-inputB').value = b;
           buildSteps();
           setTimeout(play, 300);
         };
-        window.p3LoadRSA = function(e, phi) {
-          document.getElementById('p3-inputA').value = e;
-          document.getElementById('p3-inputB').value = phi;
-          setMode(true);
+        window.p3ModInverse = function() {
+          buildSteps();
         };
-        window.p3ResetMode = function() { setMode(false); };
       }
 
       return { init };
