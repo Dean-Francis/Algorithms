@@ -1282,6 +1282,14 @@
                 <span class="stat-value" id="p1-statOptimalSplit">—</span>
                 <span class="stat-label">Optimal Split</span>
               </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p1-statCatalan">—</span>
+                <span class="stat-label">Brute-Force Paths C(n−1)</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="p1-statSaved">—</span>
+                <span class="stat-label">Multiplications Saved</span>
+              </div>
             </div>
             <div class="history-wrapper">
               <table class="history-table">
@@ -1344,6 +1352,30 @@
                   Three nested loops: chain length, start index, split point.
                   Space is <span class="mono">O(n²)</span> for the m and s tables.
                   Reconstructing the optimal order from s takes <span class="mono">O(n)</span>.
+                </div>
+              </div>
+              <div class="key-concept">
+                <div class="key-concept-title">O(n³) DP vs Exponential Brute Force</div>
+                <div class="key-concept-body">
+                  The number of distinct parenthesizations of n matrices is the
+                  Catalan number <span class="mono">C(n−1)</span>, which grows exponentially.
+                  DP avoids re-computing overlapping subproblems — each cell m[i][j]
+                  is computed once and reused.<br/><br/>
+                  <table style="width:100%;border-collapse:collapse;font-size:var(--text-xs);">
+                    <thead>
+                      <tr style="opacity:0.5;">
+                        <th style="text-align:left;padding:2px 6px;font-weight:600;">n matrices</th>
+                        <th style="text-align:center;padding:2px 6px;font-weight:600;">Brute-force C(n−1)</th>
+                        <th style="text-align:center;padding:2px 6px;font-weight:600;">DP subproblems O(n²)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td style="padding:3px 6px;opacity:0.7;">3</td><td style="text-align:center;padding:3px 6px;"><span class="mono">2</span></td><td style="text-align:center;padding:3px 6px;"><span class="mono" style="color:var(--accent);">3</span></td></tr>
+                      <tr><td style="padding:3px 6px;opacity:0.7;">4</td><td style="text-align:center;padding:3px 6px;"><span class="mono">5</span></td><td style="text-align:center;padding:3px 6px;"><span class="mono" style="color:var(--accent);">6</span></td></tr>
+                      <tr><td style="padding:3px 6px;opacity:0.7;">6</td><td style="text-align:center;padding:3px 6px;"><span class="mono">42</span></td><td style="text-align:center;padding:3px 6px;"><span class="mono" style="color:var(--accent);">15</span></td></tr>
+                      <tr><td style="padding:3px 6px;opacity:0.7;">8</td><td style="text-align:center;padding:3px 6px;"><span class="mono">429</span></td><td style="text-align:center;padding:3px 6px;"><span class="mono" style="color:var(--accent);">28</span></td></tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1589,7 +1621,7 @@
               <div class="stats-grid">
                 <div class="stat-card">
                   <span class="stat-value p2-brent-val" id="p2-bW">—</span>
-                  <span class="stat-label">Work W ≈ O(n log n)</span>
+                  <span class="stat-label">Work W ≈ O(n log² n)</span>
                 </div>
                 <div class="stat-card">
                   <span class="stat-value p2-brent-val" id="p2-bD">—</span>
@@ -1653,8 +1685,8 @@
               <div class="key-concept">
                 <div class="key-concept-title">Work vs Span</div>
                 <div class="key-concept-body">
-                  <strong>Work</strong> <span class="mono">T₁ = O(n log n)</span> — total operations
-                  as if sequential.<br/>
+                  <strong>Work</strong> <span class="mono">T₁ = O(n log² n)</span> — total operations
+                  as if sequential (ranking-based merge adds a log factor).<br/>
                   <strong>Span</strong> <span class="mono">T∞ = O(log² n)</span> — critical path
                   length with infinite processors.
                 </div>
@@ -1663,8 +1695,8 @@
                 <div class="key-concept-title">Parallelism</div>
                 <div class="key-concept-body">
                   Parallelism = Work / Span =
-                  <span class="mono">O(n log n / log² n) = O(n / log n)</span>.
-                  This means we can usefully employ up to <span class="mono">O(n / log n)</span>
+                  <span class="mono">O(n log² n / log² n) = O(n)</span>.
+                  This means we can usefully employ up to <span class="mono">O(n)</span>
                   processors before returns diminish.
                 </div>
               </div>
@@ -1700,7 +1732,7 @@
                       <tr>
                         <td style="padding:3px 6px;opacity:0.7;">Time (1 processor)</td>
                         <td style="text-align:center;padding:3px 6px;"><span class="mono">O(n log n)</span></td>
-                        <td style="text-align:center;padding:3px 6px;"><span class="mono">O(n log n)</span></td>
+                        <td style="text-align:center;padding:3px 6px;"><span class="mono">O(n log² n)</span></td>
                       </tr>
                       <tr>
                         <td style="padding:3px 6px;opacity:0.7;">Span (∞ processors)</td>
@@ -1715,7 +1747,7 @@
                       <tr>
                         <td style="padding:3px 6px;opacity:0.7;">Parallelism</td>
                         <td style="text-align:center;padding:3px 6px;"><span class="mono">1</span></td>
-                        <td style="text-align:center;padding:3px 6px;"><span class="mono" style="color:var(--accent);">O(n / log n)</span></td>
+                        <td style="text-align:center;padding:3px 6px;"><span class="mono" style="color:var(--accent);">O(n)</span></td>
                       </tr>
                     </tbody>
                   </table>
@@ -2197,6 +2229,32 @@
         return matrices;
       }
 
+      // ── Catalan number C(k) — brute-force parenthesization count ──
+      function catalan(k) {
+        if (k <= 0) return 1;
+        const c = new Array(k + 1).fill(0);
+        c[0] = 1;
+        for (let i = 1; i <= k; i++)
+          for (let j = 0; j < i; j++)
+            c[i] += c[j] * c[i - 1 - j];
+        return c[k];
+      }
+
+      // ── Worst-case parenthesization cost (max over all splits) ──
+      function computeWorstCost(p, n) {
+        const w = Array.from({length: n+2}, () => new Array(n+2).fill(0));
+        for (let len = 2; len <= n; len++) {
+          for (let i = 1; i <= n - len + 1; i++) {
+            const j = i + len - 1;
+            for (let k = i; k < j; k++) {
+              const cost = w[i][k] + w[k+1][j] + p[i-1] * p[k] * p[j];
+              if (cost > w[i][j]) w[i][j] = cost;
+            }
+          }
+        }
+        return w[1][n];
+      }
+
       // ── Core DP algorithm ─────────────────────────
       function computeData(p) {
         const n = p.length - 1;
@@ -2275,10 +2333,16 @@
         state.steps = steps;
 
         // Stats
+        const optCost   = m[1][n];
+        const worstCost = computeWorstCost(p, n);
+        const catalanN  = catalan(n - 1);
         document.getElementById('p1-statMultiplications').textContent =
-          m[1][n] === Infinity ? '—' : m[1][n].toLocaleString();
+          optCost === Infinity ? '—' : optCost.toLocaleString();
         document.getElementById('p1-statTablesFilled').textContent = n * (n - 1) / 2;
         document.getElementById('p1-statOptimalSplit').textContent = s[1][n] || '—';
+        document.getElementById('p1-statCatalan').textContent = catalanN.toLocaleString();
+        document.getElementById('p1-statSaved').textContent =
+          optCost === Infinity ? '—' : (worstCost - optCost).toLocaleString();
 
         // History
         const tbody = document.getElementById('p1-historyBody');
@@ -2693,6 +2757,19 @@
             const isLower = j < i;
             const val = tableData[i][j];
 
+            // Diagonal color palette for m-table (subtle, per-diagonal tint)
+            const diagPalette = [
+              null,
+              'rgba(59,130,246,0.08)',
+              'rgba(99,102,241,0.10)',
+              'rgba(139,92,246,0.12)',
+              'rgba(168,85,247,0.14)',
+              'rgba(217,70,239,0.16)',
+              'rgba(236,72,153,0.18)',
+              'rgba(249,115,22,0.20)',
+            ];
+            const d = j - i; // diagonal index
+
             let cellFill, cellStroke, textColor;
             if (isLower) {
               cellFill = 'none'; cellStroke = border; textColor = textMuted;
@@ -2700,7 +2777,10 @@
               cellFill = accentDim; cellStroke = accent; textColor = accent;
             } else if (isDiag) {
               cellFill = bgElevated; cellStroke = border; textColor = textSec;
-            } else if (tableType === 'm' ? val !== Infinity : val > 0) {
+            } else if (tableType === 'm' && val !== Infinity) {
+              cellFill = diagPalette[Math.min(d, diagPalette.length - 1)] || bgSurface;
+              cellStroke = border; textColor = textSec;
+            } else if (tableType === 's' && val > 0) {
               cellFill = bgSurface; cellStroke = border; textColor = textSec;
             } else {
               cellFill = bgElevated; cellStroke = border; textColor = textMuted;
@@ -2914,6 +2994,8 @@
         document.getElementById('p1-statMultiplications').textContent = '—';
         document.getElementById('p1-statTablesFilled').textContent    = '—';
         document.getElementById('p1-statOptimalSplit').textContent    = '—';
+        document.getElementById('p1-statCatalan').textContent         = '—';
+        document.getElementById('p1-statSaved').textContent           = '—';
         document.getElementById('p1-historyBody').innerHTML =
           '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);' +
           'font-family:var(--font-ui);">No steps yet</td></tr>';
@@ -3177,7 +3259,7 @@
       function computeWD(n) {
         const lg = Math.log2(Math.max(n, 2));
         return {
-          W: Math.round(n * lg),
+          W: Math.round(n * lg * lg),
           D: Math.round(lg * lg),
         };
       }
